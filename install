@@ -1,0 +1,11 @@
+git clone https://github.com/grpc/grpc.git grpc.git
+cd grpc.git/
+git submodule update --init
+cd third_party/protobuf/
+./autogen.sh
+./configure
+make -j8
+sudo make install
+sudo ldconfig
+cd -
+make -j8
