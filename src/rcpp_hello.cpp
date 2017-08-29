@@ -1,4 +1,6 @@
 #include <Rcpp.h>
+#include <grpc/grpc.h>
+
 using namespace Rcpp;
 
 // This is a simple function using Rcpp that creates an R list
