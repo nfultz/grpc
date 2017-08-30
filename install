@@ -1,5 +1,6 @@
 git clone https://github.com/grpc/grpc.git grpc.git
 cd grpc.git/
+git checkout tags/release-0_11_1
 git submodule update --init
 cd third_party/protobuf/
 ./autogen.sh
@@ -9,3 +10,8 @@ sudo make install
 sudo ldconfig
 cd -
 make -j8
+sudo make install
+sudo ldconfig
+
+R CMD INSTAL grpc
+R -e "grpc::grpc_version()"

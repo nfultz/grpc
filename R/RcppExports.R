@@ -3,11 +3,11 @@
 
 #' @export
 grpc_version <- function() {
-    .Call('grpc_grpc_version', PACKAGE = 'grpc')
+    .Call('_grpc_grpc_version', PACKAGE = 'grpc')
 }
 
 #' @export
 run <- function(target) {
-    .Call('grpc_run', PACKAGE = 'grpc', target)
+    .Call('_grpc_run', PACKAGE = 'grpc', target)
 }
 

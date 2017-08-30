@@ -7,7 +7,7 @@ using namespace Rcpp;
 
 // grpc_version
 CharacterVector grpc_version();
-RcppExport SEXP grpc_grpc_version() {
+RcppExport SEXP _grpc_grpc_version() {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -17,7 +17,7 @@ END_RCPP
 }
 // run
 List run(List target);
-RcppExport SEXP grpc_run(SEXP targetSEXP) {
+RcppExport SEXP _grpc_run(SEXP targetSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
