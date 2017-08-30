@@ -16,10 +16,8 @@ using namespace Rcpp;
 //   http://gallery.rcpp.org/
 //
 
+//' @export
 // [[Rcpp::export]]
-List rcpp_hello() {
-  CharacterVector x = CharacterVector::create("foo", "bar");
-  NumericVector y   = NumericVector::create(0.0, 1.0);
-  List z            = List::create(x, y);
-  return z;
+CharacterVector grpc_version() {
+  return CharacterVector::create(grpc_version_string());//, grpc_g_stands_for());
 }

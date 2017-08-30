@@ -1,3 +1,11 @@
+#' R utils for IP4 and IP6 addresses
+#' @name grpc
+#' @docType package
+#' @docType package
+#' @useDynLib grpc
+#' @import Rcpp
+NULL
+
 # Hello, world!
 #
 # This is an example function named 'hello'
@@ -12,11 +20,6 @@
 #   Build and Reload Package:  'Ctrl + Shift + B'
 #   Check Package:             'Ctrl + Shift + E'
 #   Test Package:              'Ctrl + Shift + T'
-
-#' @export
-hello <- function() {
-  print("Hello, world!")
-}
 
 read_services <- function(file){
   SERVICE = "service"
