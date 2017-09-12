@@ -122,13 +122,23 @@ List run(List target) {
 
 
       // receive request for backends
+      memset(ops, 0, sizeof(ops));
       op = ops;
+      Rcout << "GRPC_OP_SEND_INITIAL_METADATA\n";
+      op = ops;
+      op->op = GRPC_OP_SEND_INITIAL_METADATA;
+      op->data.send_initial_metadata.count = 0;
+      op->data.send_initial_metadata.maybe_compression_level.is_set = false;
+      op->flags = 0;
+      op->reserved = NULL;
+      op++;
+
+      Rcout << "GRPC_OP_RECV_MESSAGE\n";
       op->op = GRPC_OP_RECV_MESSAGE;
       op->data.recv_message.recv_message = &request_payload_recv;
       op->flags = 0;
       op->reserved = NULL;
       op++;
-      Rcout << "GRPC_OP_RECV_MESSAGE\n";
 
       error = grpc_call_start_batch(call, ops, (size_t)(op - ops), NULL, NULL);
       // Rcout <<    (GRPC_CALL_OK == error ? "OK" : "Not OK") << "\n";
@@ -155,14 +165,7 @@ List run(List target) {
 
 
       // Done recving
-      Rcout << "GRPC_OP_SEND_INITIAL_METADATA\n";
-      op = ops;
-      op->op = GRPC_OP_SEND_INITIAL_METADATA;
-      op->data.send_initial_metadata.count = 0;
-      op->data.send_initial_metadata.maybe_compression_level.is_set = false;
-      op->flags = 0;
-      op->reserved = NULL;
-      op++;
+
       // op->op = GRPC_OP_RECV_CLOSE_ON_SERVER;
       // op->data.recv_close_on_server.cancelled = &was_cancelled;
       // op->flags = 0;
@@ -194,11 +197,20 @@ List run(List target) {
 
       grpc_slice response_payload_slice = grpc_slice_from_copied_buffer((char*) RAW(raw_), len);
 
+      memset(ops, 0, sizeof(ops));
+
+      op = ops;
+      op->op = GRPC_OP_RECV_CLOSE_ON_SERVER;
+      op->data.recv_close_on_server.cancelled = &was_cancelled;
+      op->flags = 0;
+      op->reserved = NULL;
+      op++;
+
 
       Rcout << "GRPC_OP_SEND_MESSAGE\n";
       response_payload = grpc_raw_byte_buffer_create(&response_payload_slice, 1);
 
-      //op = ops;
+      // op = ops;
       op->op = GRPC_OP_SEND_MESSAGE;
       op->data.send_message.send_message = response_payload;
       op->flags = 0;
@@ -206,9 +218,6 @@ List run(List target) {
       op++;
 
 
-      Rcout << "response cleanup...\n";
-      grpc_byte_buffer_destroy(response_payload);
-      grpc_slice_unref(response_payload_slice);
 
       Rcout << "GRPC_OP_SEND_STATUS_FROM_SERVER\n";
       // op = ops;
@@ -229,6 +238,9 @@ List run(List target) {
 
       // GPR_ASSERT(GRPC_CALL_OK == error);
 
+      Rcout << "response cleanup...\n";
+      grpc_byte_buffer_destroy(response_payload);
+      grpc_slice_unref(response_payload_slice);
 
 
 
