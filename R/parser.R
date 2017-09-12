@@ -1,15 +1,22 @@
-## TODO
+#' Create stub object from protobuf spec
+#' 
+#' @param file the spec file
+#' @return a stub data structure
+#' @export
 read_services <- function(file){
   SERVICE = "service"
   RPC = "rpc"
   RETURNS = "returns"
   STREAM = "stream"
+  PACKAGE = "package"
 
   services <- list()
+  pkg <- ""
+
 
   doServices <- function(i){
     service_name <- tokens[i+1]
-    services[[service_name]] <<- list()
+    # services[[service_name]] <<- list()
 
     while(tokens[i] != '}') {
       if(tokens[i] == RPC){
@@ -23,7 +30,7 @@ read_services <- function(file){
 
   doRPC <- function(i, service_name) {
     rpc_name = tokens[i+1]
-    fn <- I
+    fn <- list(f=I)
 
     w <- "RequestType"
 
@@ -36,24 +43,28 @@ read_services <- function(file){
           i <- i + 1
         }
 
-        attributes(fn)[[w]] <- list(name=tokens[i], stream=isStream)
+        fn[[w]] <- list(name=tokens[i], stream=isStream, proto=sprintf("%s.%s", pkg, tokens[i]))
         w <- "ResponseType"
       }
 
       i <- i + 1
     }
-    services[[service_name]][[rpc_name]] <<- fn
+    services[[sprintf("/%s.%s/%s",pkg, service_name, rpc_name)]] <<- fn
     return(i)
   }
 
+  readProtoFiles(file)
 
   lines <- readLines(file)
 
-  tokens <- strsplit(lines, '(^//.*$|\\s+|(?=[{}();]))', perl=TRUE) %>% unlist %>% Filter(f=nchar)
+  tokens <- Filter(f=nchar, unlist(strsplit(lines, '(^//.*$|\\s+|(?=[{}();]))', perl=TRUE)))
 
   i <- 1
   while(i <= length(tokens)){
-    if(tokens[i] == SERVICE){
+    if(tokens[i] == PACKAGE) {
+      pkg <- tokens[i+1];
+    }
+    else if(tokens[i] == SERVICE){
       i <- doServices(i)
     }
 
