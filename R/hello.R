@@ -1,13 +1,7 @@
-#' Client and server implementaiton of Google's Remote Procedure Call framework
+#' Example gRPC service
 #'
-#' See the \code{\link{helloworld}} example.
-#' @name grpc
-#' @docType package
-#' @docType package
-#' @useDynLib grpc
-#' @import Rcpp
-NULL
-
+#' Reads a message with a name and returns a message greeting the name.
+#' @references \url{https://github.com/grpc/grpc/tree/master/examples/cpp/helloworld}
 #' @importFrom RProtoBuf readProtoFiles read new serialize
 helloworld <- function() {
 
