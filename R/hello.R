@@ -26,6 +26,7 @@ read_services <- function(file){
   RPC = "rpc"
   RETURNS = "returns"
   STREAM = "stream"
+    readProtoFiles(system.file('examples/helloworld.proto', package = 'grpc'))
 
   services <- list()
 
