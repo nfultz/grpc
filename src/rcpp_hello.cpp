@@ -12,12 +12,12 @@ using namespace Rcpp;
 //   http://adv-r.had.co.nz/Rcpp.html
 //
 // and browse examples of code using Rcpp at:
-// 
+//
 //   http://gallery.rcpp.org/
 //
 
 //' @export
 // [[Rcpp::export]]
 CharacterVector grpc_version() {
-  return CharacterVector::create(grpc_version_string());//, grpc_g_stands_for());
+  return CharacterVector::create(grpc_version_string(), grpc_g_stands_for());
 }

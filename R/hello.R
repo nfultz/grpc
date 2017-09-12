@@ -85,4 +85,25 @@ read_services <- function(file){
   services
 }
 
+f <- function() {
 
+  require(RProtoBuf)
+  readProtoFiles("~/projects/grpc.git/examples/protos/helloworld.proto")
+  handler <- list(
+  "/helloworld.Greeter/SayHello"=function(x){
+     x <- read(helloworld.HelloRequest, x)
+     print(x)
+
+     y <- new(helloworld.HelloReply, message=paste("Hello,", x$name))
+     print(y)
+     serialize(y, NULL)
+  })
+
+
+
+
+  grpc::run(handler)
+
+
+
+}

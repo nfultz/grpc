@@ -13,5 +13,5 @@ make -j8
 sudo make install
 sudo ldconfig
 
-R CMD INSTAL grpc
+R CMD INSTALL grpc
 R -e "grpc::grpc_version()"

@@ -1,15 +1,18 @@
 Package: grpc
 Type: Package
-Title: What the Package Does (Title Case)
+Title: g RPC Library
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
+Author: Neal Fultz, Google
+Maintainer: Neal Fultz <nfultz@gmail.com>
 Description: More about what it does (maybe more than one line)
     Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Imports:
     Rcpp (>= 0.12.5)
 LinkingTo: Rcpp
+SystemRequirements: 
+    grpc (>= 4.0.0)
+    protobuf
 RoxygenNote: 6.0.1
