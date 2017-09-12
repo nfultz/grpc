@@ -2,7 +2,6 @@
 #include <grpc/grpc.h>
 #include <grpc/impl/codegen/byte_buffer_reader.h>
 
-
 using namespace Rcpp;
 
 
@@ -72,6 +71,8 @@ List run(List target) {
   grpc_call_error error;
   grpc_op ops[6];
   grpc_op *op;
+  int was_cancelled = 2;
+
 
   grpc_byte_buffer *request_payload_recv;
   grpc_byte_buffer *response_payload;
@@ -87,6 +88,8 @@ List run(List target) {
   // Copy pasted from node module...
   grpc_event event;
   do {
+    memset(ops, 0, sizeof(ops));
+
     grpc_server_request_call(server, &call,
                              &details, &request_meta, queue, queue, NULL);
     // event = grpc_completion_queue_next(queue, gpr_inf_past(GPR_CLOCK_MONOTONIC),NULL);
@@ -95,8 +98,10 @@ List run(List target) {
 
     event = grpc_completion_queue_next(queue, c_timeout, RESERVED);
 
-        Rcout << "Event type: " << event.type << "\n";
-        Rcout << "Event method: " << sliceToChar(details.method) << "\n";
+    Rcout << "Event type: " << event.type << "\n";
+
+    CharacterVector method =     sliceToChar(details.method);
+    Rcout << "Event method: " << method  << "\n";
 
     if (event.type == GRPC_OP_COMPLETE) {
       const char *error_message;
@@ -143,17 +148,88 @@ List run(List target) {
 
       RawVector request_payload_raw = sliceToRaw(request_payload_slice);
 
-      Rcout << "Slice2Raw Cleanup\n";
+      Rcout << "...Slice2Raw Cleanup\n";
       grpc_slice_unref(request_payload_slice);
       grpc_byte_buffer_reader_destroy(&bbr);
       grpc_byte_buffer_destroy(request_payload_recv);
 
 
-      // Fire callback
-      Function callback = as<Function>(target[0]);
+      // Done recving
+      Rcout << "GRPC_OP_SEND_INITIAL_METADATA\n";
+      op = ops;
+      op->op = GRPC_OP_SEND_INITIAL_METADATA;
+      op->data.send_initial_metadata.count = 0;
+      op->data.send_initial_metadata.maybe_compression_level.is_set = false;
+      op->flags = 0;
+      op->reserved = NULL;
+      op++;
+      // op->op = GRPC_OP_RECV_CLOSE_ON_SERVER;
+      // op->data.recv_close_on_server.cancelled = &was_cancelled;
+      // op->flags = 0;
+      // op->reserved = NULL;
+      // op++;
+      // Rcout << "Batch\n";
+      // error = grpc_call_start_batch(call, ops, (size_t)(op - ops), NULL, NULL);
+      // grpc_completion_queue_next(queue, c_timeout, RESERVED); //actually does the work
 
-      Rcout << "callback";
-      callback(request_payload_raw);
+
+      // Fire callback
+      Function callback = as<Rcpp::Function>(target[as<std::string>(method[0])]);
+
+      Rcout << "callback()\n";
+      RawVector response_payload_raw = callback(request_payload_raw);
+
+      SEXP raw_ = response_payload_raw;
+
+      // char buffer[50000] ;
+      // // char buffer2[5000];
+      int len = response_payload_raw.length();
+      // for(int i = 0; i < len; i++){
+      //   buffer[i] = (char) response_payload_raw[i];
+      //   // sprintf(buffer2, "%02x ", buffer[i]);
+      //   // Rcout << buffer2;
+      // }
+      // Rcout << "copied " << len <<  " bytes\n";
+      // grpc_slice response_payload_slice = grpc_slice_from_copied_buffer(buffer, len);
+
+      grpc_slice response_payload_slice = grpc_slice_from_copied_buffer((char*) RAW(raw_), len);
+
+
+      Rcout << "GRPC_OP_SEND_MESSAGE\n";
+      response_payload = grpc_raw_byte_buffer_create(&response_payload_slice, 1);
+
+      //op = ops;
+      op->op = GRPC_OP_SEND_MESSAGE;
+      op->data.send_message.send_message = response_payload;
+      op->flags = 0;
+      op->reserved = NULL;
+      op++;
+
+
+      Rcout << "response cleanup...\n";
+      grpc_byte_buffer_destroy(response_payload);
+      grpc_slice_unref(response_payload_slice);
+
+      Rcout << "GRPC_OP_SEND_STATUS_FROM_SERVER\n";
+      // op = ops;
+      op->op = GRPC_OP_SEND_STATUS_FROM_SERVER;
+      op->data.send_status_from_server.trailing_metadata_count = 0;
+      op->data.send_status_from_server.status = GRPC_STATUS_OK;
+      grpc_slice status_details = grpc_slice_from_static_string("OK");
+      op->data.send_status_from_server.status_details = &status_details;
+      op->flags = 0;
+      op->reserved = NULL;
+      op++;
+
+      Rcout << "Batch\n";
+      error = grpc_call_start_batch(call, ops, (size_t)(op - ops), NULL, NULL);
+      Rcout << "Hangup next\n";
+      grpc_completion_queue_next(queue, c_timeout, RESERVED); //actually does the work
+      Rcout << "Hangup done...\n";
+
+      // GPR_ASSERT(GRPC_CALL_OK == error);
+
+
 
 
       //

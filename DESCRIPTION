@@ -10,7 +10,8 @@ License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Imports:
-    Rcpp (>= 0.12.5)
+    Rcpp (>= 0.12.5),
+    RProtoBuf
 LinkingTo: Rcpp
 SystemRequirements: 
     grpc (>= 4.0.0)

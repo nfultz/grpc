@@ -2,5 +2,6 @@
 
 export(grpc_version)
 export(run)
+import(RProtoBuf)
 import(Rcpp)
 useDynLib(grpc)
