@@ -40,7 +40,6 @@ RawVector sliceToRaw(grpc_slice slice){
 
 
 
-//' @export
 // [[Rcpp::export]]
 List run(List target) {
 
