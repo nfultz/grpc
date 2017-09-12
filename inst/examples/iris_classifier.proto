@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.grpc.examples.iris";
+option java_outer_classname = "IrisProto";
+option objc_class_prefix = "HLW";
+
+package iris;
+
+service Classifier {
+  rpc Classify (Features) returns (Class) {}
+}
+
+message Features {
+  float Sepal_Length = 1;
+  float Sepal_Width  = 2;
+  float Petal_Length = 3;
+  float Petal_Width  = 4;
+}
+
+message Class {
+  string Species = 1;
+}

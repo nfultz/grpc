@@ -20,3 +20,39 @@ helloworld <- function() {
     run(handler)
 
 }
+
+iris_classifier <- function() {
+
+    ## reading the service definitions
+    readProtoFiles(system.file('examples/iris_classifier.proto', package = 'grpc'))
+
+    ## build model for scoring (this is to be cached)
+    library(rpart)
+    fit <- rpart(Species ~ ., iris)
+
+    ## defining service handlers
+    handler <- list(
+        '/iris.Classifier/Classify' = function(x) {
+
+            ## parse request
+            request <- read(iris.Features, x)
+
+            ## transform into an R object for scoring
+            request <- as.list(request)
+
+            ## fix colnames
+            names(request) <- sub('_', '.', names(request))
+
+            ## score
+            class <- as.character(predict(fit, newdata = request, type = 'class'))
+
+            ## return
+            response <- new(iris.Class, Species = class)
+            serialize(response, NULL)
+
+        })
+
+    ## actually running the service handlers
+    run(handler)
+
+}
