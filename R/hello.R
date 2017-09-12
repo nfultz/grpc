@@ -1,4 +1,6 @@
-#' R utils for IP4 and IP6 addresses
+#' Client and server implementaiton of Google's Remote Procedure Call framework
+#'
+#' See the \code{\link{helloworld}} example.
 #' @name grpc
 #' @docType package
 #' @docType package
@@ -6,117 +8,35 @@
 #' @import Rcpp
 NULL
 
-# Hello, world!
-#
-# This is an example function named 'hello'
-# which prints 'Hello, world!'.
-#
-# You can learn more about package authoring with RStudio at:
-#
-#   http://r-pkgs.had.co.nz/
-#
-# Some useful keyboard shortcuts for package authoring:
-#
-#   Build and Reload Package:  'Ctrl + Shift + B'
-#   Check Package:             'Ctrl + Shift + E'
-#   Test Package:              'Ctrl + Shift + T'
+#' @importFrom RProtoBuf readProtoFiles read new serialize
+helloworld <- function() {
 
-read_services <- function(file){
-  SERVICE = "service"
-  RPC = "rpc"
-  RETURNS = "returns"
-  STREAM = "stream"
     readProtoFiles(system.file('examples/helloworld.proto', package = 'grpc'))
+    handler <- list(
 
-  services <- list()
+        '/helloworld.Greeter/SayHello' = function(x) {
 
-  doServices <- function(i){
-    service_name <- tokens[i+1]
-    services[[service_name]] <<- list()
+            x <- read(helloworld.HelloRequest, x)
+            ## message("x is")
+            ## cat(writeLines(as.character(x)))
 
-    while(tokens[i] != '}') {
-      if(tokens[i] == RPC){
-        i <- doRPC(i, service_name)
-      }
-      i <- i + 1
-    }
+            y <- new(helloworld.HelloReply, message = paste('Hello, ', x$name))
+            ## str(y)
+            ## message("y is")
+            ## cat(writeLines(as.character(y)))
 
-    return(i)
-  }
+            y2 <- serialize(y, NULL)
+            ## str(y2)
+            message("y2 is")
+            print(y2)
+            ## y3 <- read(helloworld.HelloReply, y2)
+            ## str(y3)
+            ## message("y3 is")
+            ## cat(writeLines(as.character(y3)))
+            return(y2[])
 
-  doRPC <- function(i, service_name) {
-    rpc_name = tokens[i+1]
-    fn <- I
+        })
 
-    w <- "RequestType"
-
-    while(tokens[i] != '}'){
-
-      if(tokens[i] == '('){
-        i <- i + 1
-        isStream <- tokens[i] == STREAM
-        if(isStream){
-          i <- i + 1
-        }
-
-        attributes(fn)[[w]] <- list(name=tokens[i], stream=isStream)
-        w <- "ResponseType"
-      }
-
-      i <- i + 1
-    }
-    services[[service_name]][[rpc_name]] <<- fn
-    return(i)
-  }
-
-
-  lines <- readLines(file)
-
-  tokens <- strsplit(lines, '(^//.*$|\\s+|(?=[{}();]))', perl=TRUE) %>% unlist %>% Filter(f=nchar)
-
-  i <- 1
-  while(i <= length(tokens)){
-    if(tokens[i] == SERVICE){
-      i <- doServices(i)
-    }
-
-    i <- i + 1
-  }
-
-  services
-}
-
-#' @import RProtoBuf
-f <- function() {
-
-  require(RProtoBuf)
-  readProtoFiles("~/projects/grpc.git/examples/protos/helloworld.proto")
-  handler <- list(
-  "/helloworld.Greeter/SayHello"=function(x){
-     x <- read(helloworld.HelloRequest, x)
-     # message("x is")
-     # cat(writeLines(as.character(x)))
-
-     y <- new(helloworld.HelloReply, message=paste("Hello,", x$name))
-     # str(y)
-     # message("y is")
-     # cat(writeLines(as.character(y)))
-     y2 <- serialize(y, NULL)
-     # str(y2)
-     message("y2 is")
-     print(y2)
-     # y3 <- read(helloworld.HelloReply, y2)
-     # str(y3)
-     # message("y3 is")
-     # cat(writeLines(as.character(y3)))
-     return(y2[])
-  })
-
-
-
-
-  grpc::run(handler)
-
-
+    run(handler)
 
 }

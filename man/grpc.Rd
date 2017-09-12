@@ -4,7 +4,7 @@
 \name{grpc}
 \alias{grpc}
 \alias{grpc-package}
-\title{R utils for IP4 and IP6 addresses}
+\title{Client and server implementaiton of Google's Remote Procedure Call framework}
 \description{
-R utils for IP4 and IP6 addresses
+See the \code{\link{helloworld}} example.
 }
