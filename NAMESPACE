@@ -2,6 +2,9 @@
 
 export(grpc_version)
 export(run)
-import(RProtoBuf)
 import(Rcpp)
+importFrom(RProtoBuf,new)
+importFrom(RProtoBuf,read)
+importFrom(RProtoBuf,readProtoFiles)
+importFrom(RProtoBuf,serialize)
 useDynLib(grpc)
