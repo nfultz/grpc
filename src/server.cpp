@@ -43,6 +43,7 @@ RawVector sliceToRaw(grpc_slice slice){
 // [[Rcpp::export]]
 List run(List target) {
 
+  bool done = false;
   // grpc_arg arg = {GRPC_ARG_STRING, "key", "value"};
   // grpc_channel_args channel_args = {1, &arg};
 
@@ -257,7 +258,13 @@ List run(List target) {
       // call.startBatch(end_batch, function (){});
     }
 
-  } while (1);
+    try{
+      Rcpp::checkUserInterrupt();
+    } catch (Rcpp::internal::InterruptedException ie){
+      done = true;
+    }
+    
+  } while (!done);
 
 
 

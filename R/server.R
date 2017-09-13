@@ -8,7 +8,7 @@
 #' @export
 start_server <- function(impl){
   
-  target_functions <- lapply(impl, function(fn){
+  server_functions <- lapply(impl, function(fn){
     descriptor <- P(fn[["RequestType"]]$proto)
 
     f <- structure(fn$f, 
@@ -18,6 +18,6 @@ start_server <- function(impl){
     function(x) serialize(f(read(descriptor, x)), NULL)
   })
 
-  run(target_functions)
+  run(server_functions)
   invisible(NULL)
 }
