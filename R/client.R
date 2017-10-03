@@ -2,7 +2,8 @@
 #' 
 #' @param stubs the stub of the service
 #' @param channel what to connect to
-#' @return 
+#' @return client handle
+#' @export
 grpc_client <- function(impl, channel) {
   
   
@@ -12,7 +13,7 @@ grpc_client <- function(impl, channel) {
       ResponseDescriptor <- P(fn[["ResponseType"]]$proto)
       
       list(
-        call = function(x) read(ResponseDescriptor, grpc_rpc(channel, fn$name, serialize(x, NULL))),
+        call = function(x) read(ResponseDescriptor, fetch(channel, fn$name, serialize(x, NULL))),
         build = function(...) new(RequestDescriptor, ...)
       )
     })

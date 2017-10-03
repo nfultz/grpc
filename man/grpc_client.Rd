@@ -11,6 +11,9 @@ grpc_client(impl, channel)
 
 \item{stubs}{the stub of the service}
 }
+\value{
+client handle
+}
 \description{
 Build a client handle
 }
