@@ -5,9 +5,22 @@
 
 using namespace Rcpp;
 
+// fetch
+RawVector fetch(CharacterVector server, CharacterVector method, RawVector requestArg);
+RcppExport SEXP _grpc_fetch(SEXP serverSEXP, SEXP methodSEXP, SEXP requestArgSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< CharacterVector >::type server(serverSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type method(methodSEXP);
+    Rcpp::traits::input_parameter< RawVector >::type requestArg(requestArgSEXP);
+    rcpp_result_gen = Rcpp::wrap(fetch(server, method, requestArg));
+    return rcpp_result_gen;
+END_RCPP
+}
 // grpc_version
 CharacterVector grpc_version();
-RcppExport SEXP grpc_grpc_version() {
+RcppExport SEXP _grpc_grpc_version() {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -17,7 +30,7 @@ END_RCPP
 }
 // run
 List run(List target);
-RcppExport SEXP grpc_run(SEXP targetSEXP) {
+RcppExport SEXP _grpc_run(SEXP targetSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;

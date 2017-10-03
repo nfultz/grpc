@@ -25,3 +25,20 @@ helloworld <- function() {
     start_server(impl)
 
 }
+
+helloclient <- function(){
+      
+      
+    spec <- system.file('examples/helloworld.proto', package = 'grpc')  
+    impl <- read_services(spec)
+    require(RProtoBuf)
+    readProtoFiles(spec)
+    neal = new(P('helloworld.HelloRequest'), name='neal')
+    raw_neal = serialize(neal, NULL)
+    raw_resp <- grpc:::fetch('localhost:50051', '/helloworld.Greeter/SayHello', raw_neal)
+
+    hello <- read(P('helloworld.HelloReply'), raw_resp)
+    print(hello)
+    print(as.list(hello))
+  
+}
