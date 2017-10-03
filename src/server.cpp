@@ -41,7 +41,7 @@ RawVector sliceToRaw(grpc_slice slice){
 
 
 // [[Rcpp::export]]
-List run(List target) {
+List run(List target, CharacterVector hoststring) {
 
   bool done = false;
   // grpc_arg arg = {GRPC_ARG_STRING, "key", "value"};
@@ -59,7 +59,7 @@ List run(List target) {
 
   Rcout << "Bind\n";
 
-  grpc_server_add_insecure_http2_port(server, "0.0.0.0:50051");
+  grpc_server_add_insecure_http2_port(server, hoststring[0]);
 
   // rock and roll
   Rcout << "Starting Server\n";

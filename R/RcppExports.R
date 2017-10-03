@@ -10,7 +10,7 @@ grpc_version <- function() {
     .Call('_grpc_grpc_version', PACKAGE = 'grpc')
 }
 
-run <- function(target) {
-    .Call('_grpc_run', PACKAGE = 'grpc', target)
+run <- function(target, hoststring) {
+    .Call('_grpc_run', PACKAGE = 'grpc', target, hoststring)
 }
 

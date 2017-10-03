@@ -15,14 +15,12 @@ helloworld <- function() {
     
     #hmmm slightly gross, write a helper
     impl[[SayHello]]$f <- function(request){
-      ResponseType = P(attr(sys.function(), "ResponseType")$proto)
-      response <- new(ResponseType, message = paste('Hello,', request$name))
-      response      
+      newResponse(message = paste('Hello,', request$name))
     }
     
 
     ## actually running the service handlers
-    start_server(impl)
+    start_server(impl, "0.0.0.0:50051")
 
 }
 

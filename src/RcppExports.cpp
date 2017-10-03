@@ -29,13 +29,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // run
-List run(List target);
-RcppExport SEXP _grpc_run(SEXP targetSEXP) {
+List run(List target, CharacterVector hoststring);
+RcppExport SEXP _grpc_run(SEXP targetSEXP, SEXP hoststringSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< List >::type target(targetSEXP);
-    rcpp_result_gen = Rcpp::wrap(run(target));
+    Rcpp::traits::input_parameter< CharacterVector >::type hoststring(hoststringSEXP);
+    rcpp_result_gen = Rcpp::wrap(run(target, hoststring));
     return rcpp_result_gen;
 END_RCPP
 }
