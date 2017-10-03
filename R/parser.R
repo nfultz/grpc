@@ -50,7 +50,7 @@ read_services <- function(file){
       i <- i + 1
     }
     fn$name <- sprintf("/%s.%s/%s",pkg, service_name, rpc_name)
-    services[[fn$name]] <<- fn
+    services[[rpc_name]] <<- fn
     return(i)
   }
 

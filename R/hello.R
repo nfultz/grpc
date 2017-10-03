@@ -10,11 +10,7 @@ helloworld <- function() {
     
     impl <- read_services(spec)
   
-    ## defining service handlers
-    SayHello <- grep('SayHello', names(impl))
-    
-    #hmmm slightly gross, write a helper
-    impl[[SayHello]]$f <- function(request){
+    impl$SayHello$f <- function(request){
       newResponse(message = paste('Hello,', request$name))
     }
     
@@ -31,9 +27,9 @@ helloclient <- function(){
     impl <- read_services(spec)
     client <- grpc_client(impl, "localhost:50051")
     
-    neal = client[[1]]$build(name="Neal")
+    neal = client$SayHello$build(name="Neal")
 
-    hello <- client[[1]]$call(neal)
+    hello <- client$SayHello$call(neal)
 
     print(hello)
     print(as.list(hello))

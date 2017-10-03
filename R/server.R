@@ -18,6 +18,8 @@ start_server <- function(impl, hoststring){
     
     function(x) serialize(f(read(descriptor, x)), NULL)
   })
+  
+  names(server_functions) <- vapply(impl, function(x)x$name, NA_character_)
 
   run(server_functions, hoststring)
   invisible(NULL)
