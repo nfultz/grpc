@@ -2,6 +2,7 @@
 #' 
 #' @param file the spec file
 #' @return a stub data structure
+#' @importFrom RProtoBuf readProtoFiles
 #' @export
 read_services <- function(file){
   SERVICE = "service"

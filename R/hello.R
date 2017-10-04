@@ -2,7 +2,6 @@
 #'
 #' Reads a message with a name and returns a message greeting the name.
 #' @references \url{https://github.com/grpc/grpc/tree/master/examples/cpp/helloworld}
-#' @importFrom RProtoBuf readProtoFiles read new serialize P
 helloworld <- function() {
 
     ## reading the service definitions
