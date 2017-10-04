@@ -3,6 +3,8 @@
 #' Reads a message with a name and returns a message greeting the name.
 #' @references \url{https://github.com/grpc/grpc/tree/master/examples/cpp/helloworld}
 
+library(grpc)
+
 ## reading the service definitions
 spec <- system.file('examples/helloworld.proto', package = 'grpc')
 
