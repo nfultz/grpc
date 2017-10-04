@@ -4,10 +4,12 @@
 \alias{start_server}
 \title{Start a gRPC server}
 \usage{
-start_server(impl)
+start_server(impl, channel)
 }
 \arguments{
 \item{impl}{an implementation of a proto service}
+
+\item{channel}{a channel string in 'host:port' format}
 }
 \value{
 none

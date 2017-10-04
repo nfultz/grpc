@@ -2,6 +2,7 @@
 #' 
 #' @param file the spec file
 #' @return a stub data structure
+#' @importFrom RProtoBuf readProtoFiles
 #' @export
 read_services <- function(file){
   SERVICE = "service"
@@ -49,7 +50,8 @@ read_services <- function(file){
 
       i <- i + 1
     }
-    services[[sprintf("/%s.%s/%s",pkg, service_name, rpc_name)]] <<- fn
+    fn$name <- sprintf("/%s.%s/%s",pkg, service_name, rpc_name)
+    services[[rpc_name]] <<- fn
     return(i)
   }
 
