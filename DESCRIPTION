@@ -4,7 +4,7 @@ Title: gRPC Library
 Version: 0.1.0
 Author: Neal Fultz, Google
 Maintainer: Neal Fultz <nfultz@gmail.com>
-Description: Client and server implementaiton of Google's Remote Procedure Call framework
+Description: Client and server scaffolding for Google's Remote Procedure Call framework
 License: GPL-3
 Encoding: UTF-8
 LazyData: true

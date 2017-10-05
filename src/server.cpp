@@ -6,7 +6,7 @@ using namespace Rcpp;
 
 
 #define RESERVED NULL
-#define _INTERRUPT_CHECK_PERIOD_MS 100000
+#define _INTERRUPT_CHECK_PERIOD_MS 1000
 
 CharacterVector sliceToChar(grpc_slice slice){
 
@@ -40,10 +40,10 @@ RawVector sliceToRaw(grpc_slice slice){
 
 
 
-//' @export
 // [[Rcpp::export]]
-List run(List target) {
+List run(List target, CharacterVector hoststring) {
 
+  bool done = false;
   // grpc_arg arg = {GRPC_ARG_STRING, "key", "value"};
   // grpc_channel_args channel_args = {1, &arg};
 
@@ -59,7 +59,7 @@ List run(List target) {
 
   Rcout << "Bind\n";
 
-  grpc_server_add_insecure_http2_port(server, "0.0.0.0:50051");
+  grpc_server_add_insecure_http2_port(server, hoststring[0]);
 
   // rock and roll
   Rcout << "Starting Server\n";
@@ -98,10 +98,10 @@ List run(List target) {
 
     event = grpc_completion_queue_next(queue, c_timeout, RESERVED);
 
-    Rcout << "Event type: " << event.type << "\n";
+    // Rcout << "Event type: " << event.type << "\n";
 
     CharacterVector method =     sliceToChar(details.method);
-    Rcout << "Event method: " << method  << "\n";
+    // Rcout << "Event method: " << method  << "\n";
 
     if (event.type == GRPC_OP_COMPLETE) {
       const char *error_message;
@@ -109,7 +109,14 @@ List run(List target) {
         error_message = NULL;
       } else {
         error_message = "The async function encountered an error";
+        Rcout << error_message << "\n";
+        continue;
       }
+      
+
+      Rcout << "Processing event method: " << method  << "\n";
+      
+      
       // CompleteTag(event.tag, error_message);
       // todo distpatch back to R here
 
@@ -124,7 +131,7 @@ List run(List target) {
       // receive request for backends
       memset(ops, 0, sizeof(ops));
       op = ops;
-      Rcout << "GRPC_OP_SEND_INITIAL_METADATA\n";
+      // Rcout << "GRPC_OP_SEND_INITIAL_METADATA\n";
       op = ops;
       op->op = GRPC_OP_SEND_INITIAL_METADATA;
       op->data.send_initial_metadata.count = 0;
@@ -133,7 +140,7 @@ List run(List target) {
       op->reserved = NULL;
       op++;
 
-      Rcout << "GRPC_OP_RECV_MESSAGE\n";
+      // Rcout << "GRPC_OP_RECV_MESSAGE\n";
       op->op = GRPC_OP_RECV_MESSAGE;
       op->data.recv_message.recv_message = &request_payload_recv;
       op->flags = 0;
@@ -150,7 +157,7 @@ List run(List target) {
       //         sf->balancer_name);
 
       // validate initial request.
-      Rcout << "Read Slice\n";
+      // Rcout << "Read Slice\n";
 
       grpc_byte_buffer_reader bbr;
       grpc_byte_buffer_reader_init(&bbr, request_payload_recv);
@@ -158,7 +165,7 @@ List run(List target) {
 
       RawVector request_payload_raw = sliceToRaw(request_payload_slice);
 
-      Rcout << "...Slice2Raw Cleanup\n";
+      // Rcout << "...Slice2Raw Cleanup\n";
       grpc_slice_unref(request_payload_slice);
       grpc_byte_buffer_reader_destroy(&bbr);
       grpc_byte_buffer_destroy(request_payload_recv);
@@ -207,7 +214,7 @@ List run(List target) {
       op++;
 
 
-      Rcout << "GRPC_OP_SEND_MESSAGE\n";
+      // Rcout << "GRPC_OP_SEND_MESSAGE\n";
       response_payload = grpc_raw_byte_buffer_create(&response_payload_slice, 1);
 
       // op = ops;
@@ -219,7 +226,7 @@ List run(List target) {
 
 
 
-      Rcout << "GRPC_OP_SEND_STATUS_FROM_SERVER\n";
+      // Rcout << "GRPC_OP_SEND_STATUS_FROM_SERVER\n";
       // op = ops;
       op->op = GRPC_OP_SEND_STATUS_FROM_SERVER;
       op->data.send_status_from_server.trailing_metadata_count = 0;
@@ -230,15 +237,15 @@ List run(List target) {
       op->reserved = NULL;
       op++;
 
-      Rcout << "Batch\n";
+      // Rcout << "Batch\n";
       error = grpc_call_start_batch(call, ops, (size_t)(op - ops), NULL, NULL);
-      Rcout << "Hangup next\n";
+      // Rcout << "Hangup next\n";
       grpc_completion_queue_next(queue, c_timeout, RESERVED); //actually does the work
-      Rcout << "Hangup done...\n";
+      // Rcout << "Hangup done...\n";
 
       // GPR_ASSERT(GRPC_CALL_OK == error);
 
-      Rcout << "response cleanup...\n";
+      // Rcout << "response cleanup...\n";
       grpc_byte_buffer_destroy(response_payload);
       grpc_slice_unref(response_payload_slice);
 
@@ -258,7 +265,14 @@ List run(List target) {
       // call.startBatch(end_batch, function (){});
     }
 
-  } while (1);
+    try{
+      Rcpp::checkUserInterrupt();
+    } catch (Rcpp::internal::InterruptedException ie){
+      Rcout << "Recieved Ctrl-c...\n";
+      done = true;
+    }
+    
+  } while (!done);
 
 
 
@@ -266,10 +280,10 @@ List run(List target) {
   Rcout << "Shutting down\n";
   grpc_server_shutdown_and_notify(server, queue, 0 /* tag */);
   grpc_server_cancel_all_calls(server);
-  grpc_completion_queue_pluck(queue, NULL,
-                              gpr_inf_future(GPR_CLOCK_REALTIME), NULL);
+  grpc_completion_queue_next(queue, gpr_inf_future(GPR_CLOCK_REALTIME), NULL);
   grpc_server_destroy(server);
-
+  Rcout << "done\n";
+  
 
   return List::create();
 }
