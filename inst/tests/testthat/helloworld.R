@@ -14,7 +14,7 @@ test_that('server started', {
 context('client')
 test_that('using client', {
     expect_true(any(
-        grepl('Neal',
+        grepl('Hello, Neal',
               capture.output(demo('helloclient', 'grpc', ask = FALSE)))))
 })
 
