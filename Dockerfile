@@ -39,7 +39,7 @@ RUN echo "deb http://cloud.r-project.org/bin/linux/ubuntu trusty/" >> /etc/apt/s
   r-base-core=${R_BASE_VERSION}* \
   r-base-dev=${R_BASE_VERSION}* \
   r-recommended=${R_BASE_VERSION}* \
-  libcurl4-openssl-dev libxml2-dev libfftw3-dev && \
+  libssl-dev libcurl4-openssl-dev libxml2-dev libfftw3-dev && \
   apt-get clean && rm -rf /var/lib/apt/lists/
 
 ## install R packages
