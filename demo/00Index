@@ -1,0 +1,4 @@
+helloserver Hello, World! server implementation
+helloclient Hello, World! client implementation
+iris-server Building a basic model and using that for live-scoring
+iris-client A basic client to the live-scoring server
