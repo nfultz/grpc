@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
 
 ## build grpc and protobuf
 RUN git clone -b ${GRPC_RELEASE_TAG} https://github.com/grpc/grpc /var/local/git/grpc && \
-  cd /var/local/git/grpc && git submodule update --init &&
+  cd /var/local/git/grpc && git submodule update --init && \
   cd /var/local/git/grpc/third_party/protobuf && \
   git checkout ${PROTOC_RELEASE_TAG} && \
   ./autogen.sh && ./configure && \
@@ -46,8 +46,8 @@ RUN echo "deb http://cloud.r-project.org/bin/linux/ubuntu trusty/" >> /etc/apt/s
 RUN echo 'options(repos = c(CRAN = "https://cran.rstudio.com/"), download.file.method = "libcurl")' >> /etc/R/Rprofile.site && \
   echo 'source("/etc/R/Rprofile.site")' >> /etc/littler.r && \
   Rscript -e "install.packages('docopt')" && \
-	ln -s /usr/share/doc/littler/examples/install2.r /usr/local/bin/install2.r && \
-	ln -s /usr/share/doc/littler/examples/installGithub.r /usr/local/bin/installGithub.r && \
-	install2.r --error RProtoBuf && \
-	rm -rf /tmp/downloaded_packages/ /tmp/*.rds && \
-	rm -rf /var/lib/apt/lists/*
+  ln -s /usr/share/doc/littler/examples/install2.r /usr/local/bin/install2.r && \
+  ln -s /usr/share/doc/littler/examples/installGithub.r /usr/local/bin/installGithub.r && \
+  install2.r --error RProtoBuf && \
+  rm -rf /tmp/downloaded_packages/ /tmp/*.rds && \
+  rm -rf /var/lib/apt/lists/*
