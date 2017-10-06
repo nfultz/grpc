@@ -4,6 +4,7 @@ MAINTAINER Gergely Daroczi <gergely@system1.com>
 ENV GRPC_RELEASE_TAG v1.4.5
 ENV PROTOC_RELEASE_TAG v3.2.0
 
+## install build tools
 RUN apt-get update && apt-get install -y \
   build-essential autoconf libtool \
   libgflags-dev libgtest-dev clang libc++-dev \
@@ -11,12 +12,13 @@ RUN apt-get update && apt-get install -y \
   pkg-config \
   && apt-get clean && rm -rf /var/lib/apt/lists/
 
+## build grpc and protobuf
 RUN git clone -b ${GRPC_RELEASE_TAG} https://github.com/grpc/grpc /var/local/git/grpc && \
-    cd /var/local/git/grpc && git submodule update --init
-
-RUN cd /var/local/git/grpc/third_party/protobuf && \
+    cd /var/local/git/grpc && git submodule update --init &&
+    cd /var/local/git/grpc/third_party/protobuf && \
     git checkout ${PROTOC_RELEASE_TAG} && \
     ./autogen.sh && ./configure && \
     make && make install && make clean && ldconfig && \
     cd /var/local/git/grpc && \
     make && make install && make clean && ldconfig
+
