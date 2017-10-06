@@ -1,16 +1,18 @@
 library(testthat)
+library(methods)
 library(grpc)
-library(parallel)
+library(processx)
 
 context('helloworld example')
 
 ## start a server in the background
-p <- parallel:::mcfork()
-parallel:::sendChildStdin(p, "demo('helloserver', 'grpc', ask = FALSE)\n")
+p <- process$new(commandline = "R -e \"demo('helloserver', 'grpc', ask = FALSE)\"")
 
 test_that('server started', {
-    expect_true(inherits(p, 'process'))
+    expect_true(p$is_alive())
 })
+
+## Sys.sleep(5)
 
 test_that('using client', {
     expect_true(any(
@@ -19,4 +21,4 @@ test_that('using client', {
 })
 
 ## kill server
-parallel:::mckill(p)
+p$kill()
