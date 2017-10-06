@@ -49,5 +49,6 @@ RUN echo 'options(repos = c(CRAN = "https://cran.rstudio.com/"), download.file.m
   ln -s /usr/share/doc/littler/examples/install2.r /usr/local/bin/install2.r && \
   ln -s /usr/share/doc/littler/examples/installGithub.r /usr/local/bin/installGithub.r && \
   install2.r --error RProtoBuf && \
+  installGithub.r nfultz/grpc && \
   rm -rf /tmp/downloaded_packages/ /tmp/*.rds && \
   rm -rf /var/lib/apt/lists/*
