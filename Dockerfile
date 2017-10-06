@@ -1,13 +1,13 @@
-FROM rocker/r-base:latest
+FROM ubuntu:latest
 MAINTAINER Gergely Daroczi <gergely@system1.com>
 
 ENV GRPC_RELEASE_TAG v1.4.5
-ENV PROTOC_RELEASE_TAG v3.0.0
+ENV PROTOC_RELEASE_TAG v3.2.0
 
 RUN apt-get update && apt-get install -y \
   build-essential autoconf libtool \
   libgflags-dev libgtest-dev clang libc++-dev \
-  git curl \
+  unzip git curl \
   pkg-config \
   && apt-get clean && rm -rf /var/lib/apt/lists/
 
