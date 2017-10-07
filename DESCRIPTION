@@ -11,7 +11,9 @@ LazyData: true
 Imports:
     Rcpp (>= 0.12.5),
     RProtoBuf
-Suggests: testthat
+Suggests:
+    testthat,
+    processx
 LinkingTo: Rcpp
 SystemRequirements: 
     grpc (>= 4.0.0)
