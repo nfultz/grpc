@@ -1,9 +1,12 @@
 #include <Rcpp.h>
 #include <grpc/grpc.h>
 #include <grpc/impl/codegen/byte_buffer_reader.h>
+
+#include "common.h"
+
 using namespace Rcpp;
 
-#define RESERVED NULL
+
 
 static void *tag(intptr_t i) { return (void *)i; }
 
@@ -15,7 +18,7 @@ RawVector sliceToRaw2(grpc_slice slice){
     const_cast<char *>(reinterpret_cast<const char *>(
         GRPC_SLICE_START_PTR(slice)));
 
-  Rcout << "Slice2Raw:\nn: " << n << "\nData: " << data <<"\n";
+  RGRPC_LOG("Slice2Raw:\nn: " << n << "\nData: " << data);
 
   RawVector out(n);
   for(int i = 0; i < n; i++)
@@ -52,7 +55,7 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
   
   gpr_timespec deadline = gpr_time_add(gpr_now(GPR_CLOCK_REALTIME), gpr_time_from_millis(5000, GPR_TIMESPAN));
   
-  Rcout << "Create Call\n";
+  RGRPC_LOG("Create Call");
   c = grpc_channel_create_call(
     channel, NULL, GRPC_PROPAGATE_DEFAULTS, cq,
     method_slice, //grpc_slice_from_static_string("/foo"),
@@ -61,7 +64,7 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
     NULL);
   
   
-  Rcout << "Making ops\n";  
+  RGRPC_LOG("Making ops");  
   // perform request
   grpc_op ops[6];
   grpc_op *op;
@@ -122,7 +125,7 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
   op->reserved = NULL;
   op++;
   
-  Rcout << "Starting batch...\n";
+  RGRPC_LOG("Starting batch...");
   error = grpc_call_start_batch(c, ops, (size_t)(op - ops), tag(1), NULL);
   grpc_completion_queue_next(cq, deadline, RESERVED); //actually does the work
   
@@ -141,12 +144,13 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
   
   
   // Call Header, followed by optional Initial-Metadata, followed by zero or more Payload Messages
-  Rcout << "Read response Slice\n";
+  RGRPC_LOG("Read response Slice");
   grpc_byte_buffer_reader bbr;
   grpc_byte_buffer_reader_init(&bbr, response_payload_recv);
   grpc_slice response_payload_slice = grpc_byte_buffer_reader_readall(&bbr);
   RawVector response_payload_raw = sliceToRaw2(response_payload_slice);
   
+  RGRPC_LOG("Cleanup");
   
   // teardown
   grpc_completion_queue_shutdown(cq);
