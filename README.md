@@ -1,6 +1,6 @@
 # grpc - An R library for RPC
 
-[![Build Status](https://travis-ci.org/nfultz/grpc.svg?branch=docker)](https://travis-ci.org/nfultz/grpc)
+[![Build Status](https://travis-ci.org/nfultz/grpc.svg)](https://travis-ci.org/nfultz/grpc)
 
 Easily create [gRPC](https://github.com/grpc/grpc) clients and servers from protobuf descriptions to build distributed services. 
 
