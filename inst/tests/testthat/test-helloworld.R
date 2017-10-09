@@ -13,21 +13,20 @@ test_that('server started', {
 })
 
 ## wait for the server to start
-while (TRUE) {
+for (i in 1:11) {
     Sys.sleep(1)
-    if (any(p$read_output_lines() == "Entering Event Loop")) {
+    if (any(grepl('RUNNING', p$read_output_lines(), fixed = TRUE))) {
         break()
     }
 }
 
 test_that('server running', {
+    expect_lte(i, 10)
     expect_true(p$is_alive())
 })
 
 test_that('using client', {
-    expect_true(any(
-        grepl('Hello, Neal',
-              capture.output(demo('helloclient', 'grpc', ask = FALSE)))))
+  expect_output_file(demo('helloclient', 'grpc', ask = FALSE), 'helloworld.out', update = TRUE)
 })
 
 ## kill server
