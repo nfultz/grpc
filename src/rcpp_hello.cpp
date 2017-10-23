@@ -3,6 +3,8 @@
 
 using namespace Rcpp;
 
+//' Check grpc version
+//' @return version string and what g stands for
 //' @export
 // [[Rcpp::export]]
 CharacterVector grpc_version() {

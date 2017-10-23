@@ -1,0 +1,15 @@
+FROM rocker/r-devel
+MAINTAINER Neal Fultz <nfultz@gmail.com>
+
+## Install grpc and protobuf from deb
+RUN apt-get update && apt-get install -y \
+  r-cran-rprotobuf r-cran-testthat r-cran-rcpp \
+  libgrpc3 libgrpc-dev && \
+  apt-get clean && rm -rf /var/lib/apt/lists/
+
+
+## install R packages
+## processx - suggested package for unit testing demo(helloclient)
+## remotes - required to installGithub
+RUN install2.r -r https://cran.rstudio.com/ processx remotes
+RUN installGithub.r -d FALSE nfultz/grpc && rm -rf /tmp/*
