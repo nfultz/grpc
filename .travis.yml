@@ -9,6 +9,6 @@ script:
   - >
     docker run -v `pwd`:/grpc rgrpc/grpc_dev:stable /bin/bash -c "
     cd /tmp &&
-    Rscript --vanilla -e \"devtools::install_local('/grpc')\" && 
-    Rscript --vanilla -e \"library(testthat);test_package('grpc')\"
+    R CMD INSTALL /grpc && 
+    Rscript --vanilla -e \"testthat::test_package('grpc')\"
     "
