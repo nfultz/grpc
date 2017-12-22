@@ -19,6 +19,16 @@ message Features {
 }
 
 message Class {
-  string Species = 1;
-  float Probability = 2;
+  Status status = 1;
+  string Species = 3;
+  float Probability = 4;
+}
+
+message Status {
+  enum Code {
+    OK = 0;
+    ERROR = 1;
+  }
+  Code code = 1;
+  string message = 2;
 }
