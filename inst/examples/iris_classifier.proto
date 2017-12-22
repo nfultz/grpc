@@ -12,16 +12,16 @@ service Classifier {
 }
 
 message Features {
-  float Sepal_Length = 1;
-  float Sepal_Width  = 2;
-  float Petal_Length = 3;
-  float Petal_Width  = 4;
+  float sepal_length = 1;
+  float sepal_width  = 2;
+  float petal_length = 3;
+  float petal_width  = 4;
 }
 
 message Class {
   Status status = 1;
-  string Species = 3;
-  float Probability = 4;
+  string species = 3;
+  float probability = 4;
 }
 
 message Status {
