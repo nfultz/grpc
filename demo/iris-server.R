@@ -22,10 +22,12 @@ impl$Classify$f <- function(request) {
 
     ## score
     class <- as.character(predict(fit, newdata = request, type = 'class'))
-    flog.info('Predicted class: %s', class)
+    p     <- predict(fit, newdata = request)[, class]
+
+    flog.info('Predicted class: %s (p=%s)', class, p)
 
     ## return
-    newResponse(Species = class)
+    newResponse(Species = class, Probability = p)
 
 }
 

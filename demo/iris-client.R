@@ -20,4 +20,4 @@ str(res)
 
 ## log results
 library(futile.logger)
-flog.info('Result: ', res$Species)
+flog.info('Result: %s with %s probability', res$Species, res$Probability)

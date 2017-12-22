@@ -20,4 +20,5 @@ message Features {
 
 message Class {
   string Species = 1;
+  float Probability = 2;
 }
