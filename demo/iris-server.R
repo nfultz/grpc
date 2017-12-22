@@ -22,7 +22,7 @@ impl$Classify$f <- function(request) {
     flog.info('Data received for scoring: %s', toJSON(request, auto_unbox = TRUE))
 
     ## try to score
-    response <- tryCatch({
+    tryCatch({
 
           for (v in attr(terms(fit), "term.labels")) {
               if (request[[v]] > 0) next else {
@@ -36,14 +36,11 @@ impl$Classify$f <- function(request) {
           p <- scores[, i]
 
           flog.info('Predicted class: %s (p=%5.4f)', cls, p)
-          newResponse(Species = cls, Probability = p)
+          newResponse(species = cls, probability = p)
       },
       error = function(e) {
-          newResponse(Status = new(iris.Status, code = 1, message = e$message))
+          newResponse(status = new(iris.Status, code = 1, message = e$message))
       })
-
-    return(response)
-
 
 }
 
