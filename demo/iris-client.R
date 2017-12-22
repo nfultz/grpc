@@ -2,6 +2,7 @@
 
 library(grpc)
 library(RProtoBuf)
+library(futile.logger)
 
 ## reading the service definitions
 spec <- system.file('examples/iris_classifier.proto', package = 'grpc')
@@ -11,13 +12,30 @@ impl <- read_services(spec)
 client <- grpc_client(impl, 'localhost:50051')
 
 ## define message to be sent to the gRPC server
-msg <- client$Classify$build(Sepal_Length = 5, Sepal_Width = 2, Petal_Length = 1, Petal_Width = 0.3)
+msg <- client$Classify$build(sepal_length = 5, sepal_width = 2, petal_length = 1, petal_width = 0.3)
 
 ## score
 res <- client$Classify$call(msg)
 
-str(res)
-
 ## log results
-library(futile.logger)
-flog.info('Result: ', res$Species)
+flog.info('Result: %s with %s probability', res$species, res$probability)
+
+## score a number of items
+df <- iris[sample(1:150, 25), ]
+for (n in seq_len(nrow(df))) {
+
+    msg <- client$Classify$build(
+                               sepal_length = df[n, 'Sepal.Length'],
+                               sepal_width  = df[n, 'Sepal.Width'],
+                               petal_length = df[n, 'Petal.Length'],
+                               petal_width  = df[n, 'Petal.Width'])
+    res <- client$Classify$call(msg)
+    flog.info('Result: %s with %s probability', res$species, res$probability)
+
+}
+
+## fail the classifier
+msg <- client$Classify$build(sepal_length = -5)
+res <- client$Classify$call(msg)
+str(as.list(res))
+str(as.list(res$status))

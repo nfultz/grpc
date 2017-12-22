@@ -12,12 +12,23 @@ service Classifier {
 }
 
 message Features {
-  float Sepal_Length = 1;
-  float Sepal_Width  = 2;
-  float Petal_Length = 3;
-  float Petal_Width  = 4;
+  float sepal_length = 1;
+  float sepal_width  = 2;
+  float petal_length = 3;
+  float petal_width  = 4;
 }
 
 message Class {
-  string Species = 1;
+  Status status = 1;
+  string species = 2;
+  float probability = 3;
+}
+
+message Status {
+  enum Code {
+    OK = 0;
+    ERROR = 1;
+  }
+  Code code = 1;
+  string message = 2;
 }

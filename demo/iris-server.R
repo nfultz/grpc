@@ -2,30 +2,45 @@
 
 library(grpc)
 library(futile.logger)
+library(jsonlite)
 
 ## reading the service definitions
 spec <- system.file('examples/iris_classifier.proto', package = 'grpc')
 
-## build model for scoring (this is to be cached)
+## build model for scoring (saved to global environment)
 library(rpart)
-fit <- rpart(Species ~ ., iris)
+names(iris) <- tolower(sub('.', '_', names(iris), fixed = TRUE))
+fit <- rpart(species ~ ., iris)
 
 ## define service definitions
 impl <- read_services(spec)
+
 impl$Classify$f <- function(request) {
 
-    flog.info('Data received for scoring: %s', as.character(request))
-
-    ## fix colnames
     request <- as.list(request)
-    names(request) <- sub('_', '.', names(request))
 
-    ## score
-    class <- as.character(predict(fit, newdata = request, type = 'class'))
-    flog.info('Predicted class: %s', class)
+    flog.info('Data received for scoring: %s', toJSON(request, auto_unbox = TRUE))
 
-    ## return
-    newResponse(Species = class)
+    ## try to score
+    tryCatch({
+
+          for (v in attr(terms(fit), "term.labels")) {
+              if (request[[v]] > 0) next else {
+                  stop('Negative ', v, ' provided')
+              }
+          }
+
+          scores <- predict(fit, newdata = request)
+          i <- which.max(scores)
+          cls <- attr(fit, "ylevels")[i]
+          p <- scores[, i]
+
+          flog.info('Predicted class: %s (p=%5.4f)', cls, p)
+          newResponse(species = cls, probability = p)
+      },
+      error = function(e) {
+          newResponse(status = new(iris.Status, code = 1, message = e$message))
+      })
 
 }
 
