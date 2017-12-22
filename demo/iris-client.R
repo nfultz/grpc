@@ -24,18 +24,18 @@ flog.info('Result: %s with %s probability', res$species, res$probability)
 df <- iris[sample(1:150, 25), ]
 for (n in seq_len(nrow(df))) {
 
-    ## define message to be sent to the gRPC server
     msg <- client$Classify$build(
                                sepal_length = df[n, 'Sepal.Length'],
                                sepal_width  = df[n, 'Sepal.Width'],
                                petal_length = df[n, 'Petal.Length'],
                                petal_width  = df[n, 'Petal.Width'])
-
-    ## score
     res <- client$Classify$call(msg)
-
-    ## log results
     flog.info('Result: %s with %s probability', res$species, res$probability)
 
 }
 
+## fail the classifier
+msg <- client$Classify$build(sepal_length = -5)
+res <- client$Classify$call(msg)
+str(as.list(res))
+str(as.list(res$status))

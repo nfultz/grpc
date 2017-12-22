@@ -20,8 +20,8 @@ message Features {
 
 message Class {
   Status status = 1;
-  string species = 3;
-  float probability = 4;
+  string species = 2;
+  float probability = 3;
 }
 
 message Status {

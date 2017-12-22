@@ -23,6 +23,13 @@ impl$Classify$f <- function(request) {
     class   <- tryCatch(predict(fit, newdata = request, type = 'class'),
                         error = function(e) e)
 
+    ## and fail on missing values
+    for (v in paste(rep(c('sepal', 'petal'), 2), c('length', 'width'), sep = '_')) {
+        if (request[[v]] <= 0) {
+            class <- structure(list(message = paste('Negative', v, 'provided')), class = 'error')
+        }
+    }
+
     ## return error code/message on failure
     if (inherits(class, 'error')) {
         flog.error(class$message)
