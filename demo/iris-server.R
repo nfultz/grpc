@@ -3,6 +3,7 @@
 library(grpc)
 library(futile.logger)
 library(jsonlite)
+library(RProtoBuf)
 
 ## reading the service definitions
 spec <- system.file('examples/iris_classifier.proto', package = 'grpc')
@@ -22,7 +23,7 @@ impl$Classify$f <- function(request) {
     flog.info('Data received for scoring: %s', toJSON(request, auto_unbox = TRUE))
 
     ## try to score
-    tryCatch({
+    response <- tryCatch({
 
           for (v in attr(terms(fit), "term.labels")) {
               if (request[[v]] > 0) next else {
@@ -36,12 +37,12 @@ impl$Classify$f <- function(request) {
           p <- scores[, i]
 
           flog.info('Predicted class: %s (p=%5.4f)', cls, p)
-          newResponse(species = cls, probability = p)
+          new(iris.Class, species = cls, probability = p)
       },
       error = function(e) {
-          newResponse(status = new(iris.Status, code = 1, message = e$message))
+          new(iris.Class, status = new(iris.Status, code = 1, message = e$message))
       })
-
+    response
 }
 
 ## run the service handlers
