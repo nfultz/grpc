@@ -83,7 +83,7 @@ List run(List target, CharacterVector hoststring) {
 
 
 
-  Rcout << "\t[RUNNING]\n";
+  Rcout << "[RUNNING]" << std::endl;
 
   // Copy pasted from node module...
   grpc_event event;
@@ -109,7 +109,7 @@ List run(List target, CharacterVector hoststring) {
         error_message = NULL;
       } else {
         error_message = "The async function encountered an error";
-        Rcout << error_message << "\n";
+        Rcout << error_message << std::endl;
         continue;
       }
       
@@ -283,7 +283,7 @@ List run(List target, CharacterVector hoststring) {
   grpc_server_cancel_all_calls(server);
   grpc_completion_queue_next(queue, gpr_inf_future(GPR_CLOCK_REALTIME), NULL);
   grpc_server_destroy(server);
-  Rcout << "\t[STOPPED]\n";
+  Rcout << "[STOPPED]" << std::endl;
   
 
   return List::create();
