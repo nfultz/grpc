@@ -41,7 +41,7 @@ RawVector sliceToRaw(grpc_slice slice){
 
 
 // [[Rcpp::export]]
-List run(List target, CharacterVector hoststring) {
+List run(List target, CharacterVector hoststring, Function on_start_hook) {
 
   bool done = false;
   // grpc_arg arg = {GRPC_ARG_STRING, "key", "value"};
@@ -63,6 +63,7 @@ List run(List target, CharacterVector hoststring) {
 
   // rock and roll
   Rcout << "Starting Server on port " << port << std::endl;
+  on_start_hook(port);
   grpc_server_start(server);
 
   grpc_call *call;

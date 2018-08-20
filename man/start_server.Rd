@@ -4,12 +4,15 @@
 \alias{start_server}
 \title{Start a gRPC server}
 \usage{
-start_server(impl, channel)
+start_server(impl, channel, on_start_hook = function(port)
+  cat("gRPC service started on port", port, "\\n"))
 }
 \arguments{
 \item{impl}{an implementation of a proto service}
 
 \item{channel}{a channel string in 'host:port' format}
+
+\item{on_start_hook}{R function with \code{port} argument to run when the gRPC service started}
 }
 \value{
 none
