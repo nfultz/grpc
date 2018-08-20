@@ -42,10 +42,10 @@ RawVector sliceToRaw(grpc_slice slice){
 CharacterVector runFunctionIfProvided(List hooks, std::string hook, List params){
 
   if (hooks.containsElementNamed(hook.c_str())){
-    Rcout << "[HOOK " << hook << "] start" << std::endl;
+    RGRPC_LOG("[HOOK " << hook << "] start" << std::endl);
     Function hookFunction = hooks[hook];
     hookFunction(params);
-    Rcout << "[HOOK " << hook << "] end" << std::endl;
+    RGRPC_LOG("[HOOK " << hook << "] end" << std::endl);
   }
 
   return hook;
