@@ -4,8 +4,8 @@
 \alias{start_server}
 \title{Start a gRPC server}
 \usage{
-start_server(impl, channel, on_start_hook = function(port)
-  cat("gRPC service started on port", port, "\\n"))
+start_server(impl, channel, hooks = list(prestart = function(params)
+  cat("gRPC service started on port", params$port, "\\n")))
 }
 \arguments{
 \item{impl}{an implementation of a proto service}

@@ -2,6 +2,7 @@
 #include <grpc/grpc.h>
 #include <grpc/impl/codegen/byte_buffer_reader.h>
 #include "common.h"
+#include <string>
 
 using namespace Rcpp;
 
@@ -38,11 +39,24 @@ RawVector sliceToRaw(grpc_slice slice){
   return out;
 }
 
+CharacterVector runFunctionIfProvided(List hooks, std::string hook, List params){
+
+  if (hooks.containsElementNamed(hook.c_str())){
+    Rcout << "[HOOK " << hook << "] start" << std::endl;
+    Function hookFunction = hooks[hook];
+    hookFunction(params);
+    Rcout << "[HOOK " << hook << "] end" << std::endl;
+  }
+
+  return hook;
+}
+
 
 
 // [[Rcpp::export]]
-List run(List target, CharacterVector hoststring, Function on_start_hook) {
+List run(List target, CharacterVector hoststring, List hooks) {
 
+  List params = List::create();
   bool done = false;
   // grpc_arg arg = {GRPC_ARG_STRING, "key", "value"};
   // grpc_channel_args channel_args = {1, &arg};
@@ -60,10 +74,12 @@ List run(List target, CharacterVector hoststring, Function on_start_hook) {
   RGRPC_LOG("Bind");
 
   int port = grpc_server_add_insecure_http2_port(server, hoststring[0]);
+  params["port"] = port;
 
   // rock and roll
   Rcout << "Starting Server on port " << port << std::endl;
-  on_start_hook(port);
+  runFunctionIfProvided(hooks, "prestart", params);
+  //  on_start_hook(port);
   grpc_server_start(server);
 
   grpc_call *call;

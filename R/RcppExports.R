@@ -12,7 +12,7 @@ grpc_version <- function() {
     .Call('_grpc_grpc_version', PACKAGE = 'grpc')
 }
 
-run <- function(target, hoststring, on_start_hook) {
-    .Call('_grpc_run', PACKAGE = 'grpc', target, hoststring, on_start_hook)
+run <- function(target, hoststring, hooks) {
+    .Call('_grpc_run', PACKAGE = 'grpc', target, hoststring, hooks)
 }
 

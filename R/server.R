@@ -9,8 +9,8 @@
 #' @importFrom RProtoBuf P serialize read
 #' @useDynLib grpc
 #' @export
-start_server <- function(impl, channel, on_start_hook = function(port)
-    cat('gRPC service started on port', port, '\n')) {
+start_server <- function(impl, channel, hooks = list(
+  prestart = function(params) cat('gRPC service started on port', params$port, '\n'))) {
 
   server_functions <- lapply(impl, function(fn){
     descriptor <- P(fn[["RequestType"]]$proto)
@@ -24,7 +24,7 @@ start_server <- function(impl, channel, on_start_hook = function(port)
 
   names(server_functions) <- vapply(impl, function(x)x$name, NA_character_)
 
-  run(server_functions, channel, on_start_hook)
+  run(server_functions, channel, hooks)
   invisible(NULL)
 }
 
