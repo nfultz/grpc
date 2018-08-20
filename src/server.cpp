@@ -59,10 +59,10 @@ List run(List target, CharacterVector hoststring) {
 
   RGRPC_LOG("Bind");
 
-  grpc_server_add_insecure_http2_port(server, hoststring[0]);
+  int port = grpc_server_add_insecure_http2_port(server, hoststring[0]);
 
   // rock and roll
-  Rcout << "Starting Server...";
+  Rcout << "Starting Server on port " << port << std::endl;
   grpc_server_start(server);
 
   grpc_call *call;
