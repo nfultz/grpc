@@ -6,7 +6,6 @@
 
 using namespace Rcpp;
 
-
 #define _INTERRUPT_CHECK_PERIOD_MS 1000
 
 CharacterVector sliceToChar(grpc_slice slice){
@@ -42,10 +41,10 @@ RawVector sliceToRaw(grpc_slice slice){
 CharacterVector runFunctionIfProvided(List hooks, std::string hook, List params){
 
   if (hooks.containsElementNamed(hook.c_str())){
-    RGRPC_LOG("[HOOK " << hook << "] start" << std::endl);
+    debugLog("[HOOK " + hook + "] start");
     Function hookFunction = hooks[hook];
     hookFunction(params);
-    RGRPC_LOG("[HOOK " << hook << "] end" << std::endl);
+    debugLog("[HOOK " + hook + "] end");
   }
 
   return hook;

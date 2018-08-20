@@ -1,7 +1,8 @@
-
 #ifndef RGRPC_H
 #define RGRPC_H
 
+#include <Rcpp.h>
+void debugLog(std::string message);
 
 /* uncomment for debugging */
 // #define RGRPC_DEBUG
@@ -15,3 +16,5 @@
 #define RESERVED NULL
 
 #endif
+
+
