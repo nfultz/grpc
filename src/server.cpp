@@ -38,7 +38,7 @@ RawVector sliceToRaw(grpc_slice slice){
   return out;
 }
 
-CharacterVector runFunctionIfProvided(List hooks, std::string hook, List params){
+void runFunctionIfProvided(List hooks, std::string hook, List params){
 
   if (hooks.containsElementNamed(hook.c_str())){
     RGRPC_LOG("[HOOK " << hook << "] found and starting");
@@ -48,8 +48,6 @@ CharacterVector runFunctionIfProvided(List hooks, std::string hook, List params)
   } else {
     RGRPC_LOG("[HOOK " << hook << "] not found");
   }
-
-  return hook;
 
 }
 
