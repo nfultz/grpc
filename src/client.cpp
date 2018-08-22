@@ -76,6 +76,7 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
   grpc_call_details call_details;
   grpc_status_code status;
   grpc_call_error error;
+  grpc_event event;
   grpc_slice details;
   int was_cancelled = 2;
   
@@ -127,11 +128,18 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
   
   RGRPC_LOG("Starting batch...");
   error = grpc_call_start_batch(c, ops, (size_t)(op - ops), tag(1), NULL);
-  grpc_completion_queue_next(cq, deadline, RESERVED); //actually does the work
-  
-  
-  
-  
+  if (error != GRPC_CALL_OK) {
+    stop("gRPC c++ call start failed");
+  }
+  event = grpc_completion_queue_next(cq, deadline, RESERVED); //actually does the work
+  if (event.type == GRPC_QUEUE_TIMEOUT) {
+    stop("gRPC c++ call timeout");
+  }
+  if (event.type != GRPC_OP_COMPLETE) {
+    stop("gRPC c++ call error");
+  }
+  // Rcout << event.success << '\n';
+
   // client_batch[grpc.opType.SEND_INITIAL_METADATA] =
   //   metadata._getCoreRepresentation();
   // client_batch[grpc.opType.SEND_MESSAGE] = message;
