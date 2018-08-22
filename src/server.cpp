@@ -65,22 +65,24 @@ List run(List target, CharacterVector hoststring, List hooks) {
   RGRPC_LOG("Create Server");
 
   grpc_server* server = grpc_server_create(NULL /*&channel_args*/, 0);
+  runFunctionIfProvided(hooks, "server_create", params);
 
   // create completion queue
   RGRPC_LOG("Creating Queue");
   grpc_completion_queue* queue = grpc_completion_queue_create_for_next(RESERVED); //todo
   grpc_server_register_completion_queue(server, queue, RESERVED);
-
+  runFunctionIfProvided(hooks, "queue_create", params);
+  
   RGRPC_LOG("Bind");
-  runFunctionIfProvided(hooks, "create_queu", params);
 
   int port = grpc_server_add_insecure_http2_port(server, hoststring[0]);
   params["port"] = port;
+  runFunctionIfProvided(hooks, "bind", params);
 
   // rock and roll
   RGRPC_LOG("Starting Server on port " << port);
-  runFunctionIfProvided(hooks, "prestart", params);
   grpc_server_start(server);
+  runFunctionIfProvided(hooks, "server_start", params);
 
   grpc_call *call;
   grpc_call_details details;
@@ -94,12 +96,11 @@ List run(List target, CharacterVector hoststring, List hooks) {
   grpc_byte_buffer *response_payload;
 
   // init crap
-  runFunctionIfProvided(hooks, "preinit", params);
   grpc_call_details_init(&details);
   grpc_metadata_array_init(&request_meta);
+  runFunctionIfProvided(hooks, "run", params);
 
   RGRPC_LOG("[RUNNING]");
-  runFunctionIfProvided(hooks, "postinit", params);
 
   // Copy pasted from node module...
   grpc_event event;

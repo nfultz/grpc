@@ -2,14 +2,15 @@
 #'
 #' @param impl an implementation of a proto service
 #' @param channel a channel string in 'host:port' format
-#' @param hooks list of R function(s) with \code{params} argument as a list to be run at different parts of the C++ calls. Supported hooks: \code{prebind}, \code{prestart}, \code{preinit}, \code{postinit}, \code{preshutdown}, \code{stopped}
+#' @param hooks list of R function(s) with \code{params} argument as a list to be run at different parts of the C++ calls. Supported hooks: \code{server_create}, \code{queue_create}, \code{bind} (when \code{params$port} becomes available), \code{server_start}, \code{run}
 #' @return none
 #' @importFrom methods selectMethod
 #' @importFrom RProtoBuf P serialize read
 #' @useDynLib grpc
 #' @export
 start_server <- function(impl, channel, hooks = list(
-  prestart = function(params) cat('gRPC service started on port', params$port, '\n'))) {
+  bind = function(params) cat('gRPC service will listen on port', params$port, '\n'),
+  run = function(params) cat('gRPC service started on port', params$port, '\n'))) {
 
   server_functions <- lapply(impl, function(fn){
     descriptor <- P(fn[["RequestType"]]$proto)

@@ -4,15 +4,16 @@
 \alias{start_server}
 \title{Start a gRPC server}
 \usage{
-start_server(impl, channel, hooks = list(prestart = function(params)
-  cat("gRPC service started on port", params$port, "\\n")))
+start_server(impl, channel, hooks = list(bind = function(params)
+  cat("gRPC service will listen on port", params$port, "\\n"), run =
+  function(params) cat("gRPC service started on port", params$port, "\\n")))
 }
 \arguments{
 \item{impl}{an implementation of a proto service}
 
 \item{channel}{a channel string in 'host:port' format}
 
-\item{hooks}{list of R function(s) with \code{params} argument as a list to be run at different parts of the C++ calls. Supported hooks: \code{prebind}, \code{prestart}, \code{preinit}, \code{postinit}, \code{preshutdown}, \code{stopped}}
+\item{hooks}{list of R function(s) with \code{params} argument as a list to be run at different parts of the C++ calls. Supported hooks: \code{server_create}, \code{queue_create}, \code{bind} (when \code{params$port} becomes available), \code{server_start}, \code{run}}
 }
 \value{
 none
