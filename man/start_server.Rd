@@ -11,7 +11,7 @@ start_server(impl, channel, hooks = grpc_default_hooks())
 
 \item{channel}{a channel string in 'host:port' format}
 
-\item{hooks}{list of R function(s) with \code{params} argument as a list to be run at different parts of the C++ calls. Supported hooks: \code{server_create}, \code{queue_create}, \code{bind} (when \code{params$port} becomes available), \code{server_start}, \code{run}}
+\item{hooks}{list of R function(s) with \code{params} argument as a list to be run at different parts of the C++ calls. Supported hooks: \code{server_create}, \code{queue_create}, \code{bind} (when \code{params$port} becomes available), \code{server_start}, \code{run}, \code{shutdown}, \code{stopped}}
 }
 \value{
 none

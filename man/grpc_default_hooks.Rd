@@ -10,5 +10,5 @@ grpc_default_hooks()
 \code{list}
 }
 \description{
-You may want to override this with custom function, eg registering the gRPC service in Hashicorp's consul.io or similar after \code{server_start} etc.
+You may want to override this with custom functions, eg registering the gRPC service in Hashicorp's consul.io or similar after \code{server_start} etc.
 }
