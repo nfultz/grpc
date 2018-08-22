@@ -32,6 +32,9 @@ grpc_default_hooks <- function() {
     },
     stopped = function(params) {
       flog.debug('gRPC service stopped')
+    },
+    exit = function(params) {
+      flog.trace('The gRPC server exited')
     }
   )
 }

@@ -2,7 +2,7 @@
 #'
 #' @param impl an implementation of a proto service
 #' @param channel a channel string in 'host:port' format
-#' @param hooks list of R function(s) with \code{params} argument as a list to be run at different parts of the C++ calls. Supported hooks: \code{server_create}, \code{queue_create}, \code{bind} (when \code{params$port} becomes available), \code{server_start}, \code{run}, \code{shutdown}, \code{stopped}
+#' @param hooks list of R function(s) with \code{params} argument as a list to be run at different parts of the C++ calls. Supported hooks: \code{server_create}, \code{queue_create}, \code{bind} (when \code{params$port} becomes available), \code{server_start}, \code{run}, \code{shutdown}, \code{stopped}, \code{exit}
 #' @return none
 #' @importFrom methods selectMethod
 #' @importFrom RProtoBuf P serialize read
@@ -10,6 +10,10 @@
 #' @export
 #' @seealso \code{\link{grpc_default_hooks}}
 start_server <- function(impl, channel, hooks = grpc_default_hooks()) {
+
+  if (!is.null(hooks$exit) & is.function(hooks$exit)) {
+    on.exit(hooks$exit())
+  }
 
   server_functions <- lapply(impl, function(fn){
     descriptor <- P(fn[["RequestType"]]$proto)
