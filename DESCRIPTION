@@ -10,7 +10,8 @@ Encoding: UTF-8
 LazyData: true
 Imports:
     Rcpp (>= 0.12.5),
-    RProtoBuf
+    RProtoBuf,
+    futile.logger
 Suggests:
     testthat,
     processx

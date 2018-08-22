@@ -4,9 +4,7 @@
 \alias{start_server}
 \title{Start a gRPC server}
 \usage{
-start_server(impl, channel, hooks = list(bind = function(params)
-  cat("gRPC service will listen on port", params$port, "\\n"), run =
-  function(params) cat("gRPC service started on port", params$port, "\\n")))
+start_server(impl, channel, hooks = grpc_default_hooks())
 }
 \arguments{
 \item{impl}{an implementation of a proto service}
@@ -20,4 +18,7 @@ none
 }
 \description{
 Start a gRPC server
+}
+\seealso{
+\code{\link{grpc_default_hooks}}
 }

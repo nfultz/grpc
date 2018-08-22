@@ -25,7 +25,11 @@ There are runnable examples in the `demo/` folder.
 To start a HelloWorld server:
   
     R -e 'demo("helloserver", "grpc")'
-    
+
+Or with much more detailed logging:
+  
+    R -e 'library(futile.logger); flog.threshold(TRACE); demo("helloserver", "grpc")'
+
 To run a client against a running HelloWorld server:
   
     R -e 'demo("helloclient", "grpc")'

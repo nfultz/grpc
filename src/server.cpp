@@ -296,7 +296,7 @@ List run(List target, CharacterVector hoststring, List hooks) {
 
   //shutdown
   RGRPC_LOG("Shutting down\n");
-  runFunctionIfProvided(hooks, "preshutdown", params);
+  runFunctionIfProvided(hooks, "shutdown", params);
   grpc_server_shutdown_and_notify(server, queue, 0 /* tag */);
   grpc_server_cancel_all_calls(server);
   grpc_completion_queue_next(queue, gpr_inf_future(GPR_CLOCK_REALTIME), NULL);
