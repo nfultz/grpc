@@ -8,7 +8,7 @@ void debugLog(std::string message);
 // #define RGRPC_DEBUG
 
 #ifdef RGRPC_DEBUG
-#define RGRPC_LOG(x) Rcout << x << "\n";
+#define RGRPC_LOG(x) Rcout << x << std::endl;
 #else
 #define RGRPC_LOG(x) 
 #endif

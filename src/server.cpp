@@ -54,7 +54,6 @@ CharacterVector runFunctionIfProvided(List hooks, std::string hook, List params)
 }
 
 
-
 // [[Rcpp::export]]
 List run(List target, CharacterVector hoststring, List hooks) {
 
@@ -79,9 +78,8 @@ List run(List target, CharacterVector hoststring, List hooks) {
   params["port"] = port;
 
   // rock and roll
-  Rcout << "Starting Server on port " << port << std::endl;
+  RGRPC_LOG("Starting Server on port " << port);
   runFunctionIfProvided(hooks, "prestart", params);
-  //  on_start_hook(port);
   grpc_server_start(server);
 
   grpc_call *call;
@@ -100,9 +98,7 @@ List run(List target, CharacterVector hoststring, List hooks) {
   grpc_call_details_init(&details);
   grpc_metadata_array_init(&request_meta);
 
-
-
-  Rcout << "[RUNNING]" << std::endl;
+  RGRPC_LOG("[RUNNING]");
 
   // Copy pasted from node module...
   grpc_event event;
