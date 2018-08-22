@@ -12,7 +12,7 @@ start_server(impl, channel, hooks = list(prestart = function(params)
 
 \item{channel}{a channel string in 'host:port' format}
 
-\item{on_start_hook}{R function with \code{port} argument to run when the gRPC service started}
+\item{hooks}{list of R function(s) with \code{params} argument as a list to be run at different parts of the C++ calls. Supported hooks: \code{prebind}, \code{prestart}, \code{preinit}, \code{postinit}, \code{preshutdown}, \code{stopped}}
 }
 \value{
 none

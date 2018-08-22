@@ -55,7 +55,9 @@ void runFunctionIfProvided(List hooks, std::string hook, List params){
 // [[Rcpp::export]]
 List run(List target, CharacterVector hoststring, List hooks) {
 
+  // to passed to R hooks
   List params = List::create();
+  
   bool done = false;
   // grpc_arg arg = {GRPC_ARG_STRING, "key", "value"};
   // grpc_channel_args channel_args = {1, &arg};
@@ -64,13 +66,13 @@ List run(List target, CharacterVector hoststring, List hooks) {
 
   grpc_server* server = grpc_server_create(NULL /*&channel_args*/, 0);
 
-
   // create completion queue
   RGRPC_LOG("Creating Queue");
   grpc_completion_queue* queue = grpc_completion_queue_create_for_next(RESERVED); //todo
   grpc_server_register_completion_queue(server, queue, RESERVED);
 
   RGRPC_LOG("Bind");
+  runFunctionIfProvided(hooks, "create_queu", params);
 
   int port = grpc_server_add_insecure_http2_port(server, hoststring[0]);
   params["port"] = port;
@@ -88,15 +90,16 @@ List run(List target, CharacterVector hoststring, List hooks) {
   grpc_op *op;
   int was_cancelled = 2;
 
-
   grpc_byte_buffer *request_payload_recv;
   grpc_byte_buffer *response_payload;
 
   // init crap
+  runFunctionIfProvided(hooks, "preinit", params);
   grpc_call_details_init(&details);
   grpc_metadata_array_init(&request_meta);
 
   RGRPC_LOG("[RUNNING]");
+  runFunctionIfProvided(hooks, "postinit", params);
 
   // Copy pasted from node module...
   grpc_event event;
@@ -292,12 +295,13 @@ List run(List target, CharacterVector hoststring, List hooks) {
 
   //shutdown
   RGRPC_LOG("Shutting down\n");
+  runFunctionIfProvided(hooks, "preshutdown", params);
   grpc_server_shutdown_and_notify(server, queue, 0 /* tag */);
   grpc_server_cancel_all_calls(server);
   grpc_completion_queue_next(queue, gpr_inf_future(GPR_CLOCK_REALTIME), NULL);
   grpc_server_destroy(server);
   Rcout << "[STOPPED]" << std::endl;
-  
+  runFunctionIfProvided(hooks, "stopped", params);  
 
   return List::create();
 }

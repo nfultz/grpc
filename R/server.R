@@ -1,9 +1,8 @@
-
 #' Start a gRPC server
 #'
 #' @param impl an implementation of a proto service
 #' @param channel a channel string in 'host:port' format
-#' @param on_start_hook R function with \code{port} argument to run when the gRPC service started
+#' @param hooks list of R function(s) with \code{params} argument as a list to be run at different parts of the C++ calls. Supported hooks: \code{prebind}, \code{prestart}, \code{preinit}, \code{postinit}, \code{preshutdown}, \code{stopped}
 #' @return none
 #' @importFrom methods selectMethod
 #' @importFrom RProtoBuf P serialize read
