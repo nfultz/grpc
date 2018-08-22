@@ -116,9 +116,9 @@ List run(List target, CharacterVector hoststring, List hooks) {
     event = grpc_completion_queue_next(queue, c_timeout, RESERVED);
 
     RGRPC_LOG("Event type: " << event.type);
-
     CharacterVector method =     sliceToChar(details.method);
     RGRPC_LOG("Event method: " << method);
+    params["event_method"] = method;
 
     if (event.type == GRPC_OP_COMPLETE) {
       const char *error_message;
@@ -126,13 +126,13 @@ List run(List target, CharacterVector hoststring, List hooks) {
         error_message = NULL;
       } else {
         error_message = "The async function encountered an error";
-        Rcout << error_message << std::endl;
+        RGRPC_LOG(error_message);
         continue;
       }
       
 
       RGRPC_LOG("Processing event method: " << method );
-      
+      runFunctionIfProvided(hooks, "event_received", params);     
       
       // CompleteTag(event.tag, error_message);
       // todo distpatch back to R here
@@ -204,6 +204,7 @@ List run(List target, CharacterVector hoststring, List hooks) {
       // Fire callback
       Function callback = as<Rcpp::Function>(target[as<std::string>(method[0])]);
 
+      runFunctionIfProvided(hooks, "event_processed", params);
       RGRPC_LOG("callback()");
       RawVector response_payload_raw = callback(request_payload_raw);
 
@@ -286,7 +287,7 @@ List run(List target, CharacterVector hoststring, List hooks) {
     try{
       Rcpp::checkUserInterrupt();
     } catch (Rcpp::internal::InterruptedException ie){
-      Rcout << "Stopping server...";
+      RGRPC_LOG("Stopping server...");
       done = true;
     }
     
@@ -301,7 +302,7 @@ List run(List target, CharacterVector hoststring, List hooks) {
   grpc_server_cancel_all_calls(server);
   grpc_completion_queue_next(queue, gpr_inf_future(GPR_CLOCK_REALTIME), NULL);
   grpc_server_destroy(server);
-  Rcout << "[STOPPED]" << std::endl;
+  RGRPC_LOG("[STOPPED]");
   runFunctionIfProvided(hooks, "stopped", params);  
 
   return List::create();
