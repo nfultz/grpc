@@ -36,6 +36,18 @@ To run a client against a running HelloWorld server:
     
 Both are cross compatible with the Node, Python and C++ Greeter examples provided by the grpc library.
 
+### Health check
+
+This server implements the above service along with the standard [GRPC Health Checking Protocol](https://github.com/grpc/grpc/blob/master/doc/health-checking.md):
+
+    R -e 'demo("health-check-server", "grpc")'
+
+The client runs a health-check then calls the Hello, World! method once:
+
+    R -e 'demo("health-check-client", "grpc")'
+
+Please check the sources of the server to see how to bundle services defined in multiple `proto` files.
+
 ### Live scoring
 
 There's a simple trained on the `iris` dataset and making that available for scoring via a gRPC service:
