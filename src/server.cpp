@@ -3,6 +3,7 @@
 #include <grpc/impl/codegen/byte_buffer_reader.h>
 #include "common.h"
 #include <string>
+#include <grpc/slice.h>
 
 using namespace Rcpp;
 
@@ -10,9 +11,7 @@ using namespace Rcpp;
 
 CharacterVector sliceToChar(grpc_slice slice){
 
-  char* data =
-  const_cast<char *>(reinterpret_cast<const char *>(
-      GRPC_SLICE_START_PTR(slice)));
+  char* data = grpc_slice_to_c_string(slice);
 
   CharacterVector out(1);
   out[0] = data;
@@ -24,9 +23,7 @@ RawVector sliceToRaw(grpc_slice slice){
 
   int n = GRPC_SLICE_LENGTH(slice);
 
-  char* data =
-    const_cast<char *>(reinterpret_cast<const char *>(
-        GRPC_SLICE_START_PTR(slice)));
+  char* data = grpc_slice_to_c_string(slice);
 
   RGRPC_LOG("Slice2Raw:\nn: " << n << "\nData: " << data);
 
