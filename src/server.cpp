@@ -7,6 +7,10 @@
 
 using namespace Rcpp;
 
+#include <grpc++/grpc++.h>
+using grpc::Status;
+using grpc::StatusCode;
+
 #define _INTERRUPT_CHECK_PERIOD_MS 1000
 
 CharacterVector sliceToChar(grpc_slice slice){
@@ -47,7 +51,6 @@ void runFunctionIfProvided(List hooks, std::string hook, List params){
   }
 
 }
-
 
 // [[Rcpp::export]]
 List run(List target, CharacterVector hoststring, List hooks) {
@@ -90,7 +93,7 @@ List run(List target, CharacterVector hoststring, List hooks) {
   int was_cancelled = 2;
 
   grpc_byte_buffer *request_payload_recv;
-  grpc_byte_buffer *response_payload;
+
 
   // init crap
   grpc_call_details_init(&details);
@@ -197,28 +200,47 @@ List run(List target, CharacterVector hoststring, List hooks) {
       // error = grpc_call_start_batch(call, ops, (size_t)(op - ops), NULL, NULL);
       // grpc_completion_queue_next(queue, c_timeout, RESERVED); //actually does the work
 
+      // default status code
+      grpc_status_code status_code = GRPC_STATUS_UNKNOWN;
+      char const *status_details_string = "Unknown error";
 
-      // Fire callback
-      Function callback = as<Rcpp::Function>(target[as<std::string>(method[0])]);
+      RawVector response_payload_raw = no_init(1);
+      grpc_byte_buffer *response_payload;
+      grpc_slice response_payload_slice;
 
-      runFunctionIfProvided(hooks, "event_processed", params);
-      RGRPC_LOG("callback()");
-      RawVector response_payload_raw = callback(request_payload_raw);
+      if (target.containsElementNamed(method[0])) {
 
-      SEXP raw_ = response_payload_raw;
+        RGRPC_LOG("Method found: " << method[0]);
+        // Fire callback
+        Function callback = as<Rcpp::Function>(target[as<std::string>(method[0])]);
 
-      // char buffer[50000] ;
-      // // char buffer2[5000];
-      int len = response_payload_raw.length();
-      // for(int i = 0; i < len; i++){
-      //   buffer[i] = (char) response_payload_raw[i];
-      //   // sprintf(buffer2, "%02x ", buffer[i]);
-      //   // Rcout << buffer2;
-      // }
-      // Rcout << "copied " << len <<  " bytes\n";
-      // grpc_slice response_payload_slice = grpc_slice_from_copied_buffer(buffer, len);
+        // TODO try/catch
+        // RawVector response_payload_raw = grpcError("UNIMPLEMENTED");
+        // try {
+        //   Rcout << "Call start: " << std::endl;
+        //   response_payload_raw = callback(request_payload_raw);
+        //   Rcout << "Call finished: " << std::endl;
+        // } catch(...) {
+        //   // TODO call R fn
+        //   Rcout << "Call failed: " << std::endl;
+        //   // RawVector response_payload_raw = grpcError("foobar");
+        // }
 
-      grpc_slice response_payload_slice = grpc_slice_from_copied_buffer((char*) RAW(raw_), len);
+        response_payload_raw = callback(request_payload_raw);
+
+        runFunctionIfProvided(hooks, "event_processed", params);
+        RGRPC_LOG("callback()");
+
+        status_code = GRPC_STATUS_OK;
+        status_details_string = "OK";
+
+      } else {
+
+        RGRPC_LOG("Method not found: " << method[0]);
+        status_code = GRPC_STATUS_UNIMPLEMENTED;
+        status_details_string = "Method not implemented";
+
+      }
 
       memset(ops, 0, sizeof(ops));
 
@@ -229,25 +251,31 @@ List run(List target, CharacterVector hoststring, List hooks) {
       op->reserved = NULL;
       op++;
 
+      if (status_code == GRPC_STATUS_OK) {
 
-      RGRPC_LOG("GRPC_OP_SEND_MESSAGE");
-      response_payload = grpc_raw_byte_buffer_create(&response_payload_slice, 1);
+        RGRPC_LOG("GRPC_OP_SEND_MESSAGE");
 
-      // op = ops;
-      op->op = GRPC_OP_SEND_MESSAGE;
-      op->data.send_message.send_message = response_payload;
-      op->flags = 0;
-      op->reserved = NULL;
-      op++;
+        int len = response_payload_raw.length();
+        SEXP raw_ = response_payload_raw;
+        response_payload_slice = grpc_slice_from_copied_buffer((char*) RAW(raw_), len);
+        response_payload = grpc_raw_byte_buffer_create(&response_payload_slice, 1);
 
-
+        op->op = GRPC_OP_SEND_MESSAGE;
+        op->data.send_message.send_message = response_payload;
+        op->flags = 0;
+        op->reserved = NULL;
+        op++;
+ 
+      }
 
       RGRPC_LOG("GRPC_OP_SEND_STATUS_FROM_SERVER");
       // op = ops;
       op->op = GRPC_OP_SEND_STATUS_FROM_SERVER;
       op->data.send_status_from_server.trailing_metadata_count = 0;
-      op->data.send_status_from_server.status = GRPC_STATUS_OK;
-      grpc_slice status_details = grpc_slice_from_static_string("OK");
+
+      op->data.send_status_from_server.status = status_code;
+      grpc_slice status_details = grpc_slice_from_static_string(status_details_string);
+
       op->data.send_status_from_server.status_details = &status_details;
       op->flags = 0;
       op->reserved = NULL;
@@ -264,8 +292,6 @@ List run(List target, CharacterVector hoststring, List hooks) {
       // Rcout << "response cleanup...\n";
       grpc_byte_buffer_destroy(response_payload);
       grpc_slice_unref(response_payload_slice);
-
-
 
       //
       //
