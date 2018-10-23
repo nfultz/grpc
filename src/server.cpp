@@ -208,29 +208,23 @@ List run(List target, CharacterVector hoststring, List hooks) {
       grpc_byte_buffer *response_payload;
       grpc_slice response_payload_slice;
 
+      // Fire callback
       if (target.containsElementNamed(method[0])) {
 
         RGRPC_LOG("Method found: " << method[0]);
-        // Fire callback
         Function callback = as<Rcpp::Function>(target[as<std::string>(method[0])]);
 
-        // TODO try/catch
         try {
           
-          Rcout << "Call start: " << std::endl;
           response_payload_raw = callback(request_payload_raw);
-          Rcout << "Call finished: " << std::endl;
-
           runFunctionIfProvided(hooks, "event_processed", params);
-          RGRPC_LOG("callback()");
+          RGRPC_LOG("callback() success");
 
           status_code = GRPC_STATUS_OK;
           status_details_string = "OK";
           
         } catch(...) {
-          // TODO call R fn
-          Rcout << "Call failed: " << std::endl;
-          // RawVector response_payload_raw = grpcError("foobar");
+          RGRPC_LOG("callback() failed");
         }
 
       } else {
