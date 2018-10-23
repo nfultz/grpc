@@ -93,7 +93,7 @@ List run(List target, CharacterVector hoststring, List hooks) {
   int was_cancelled = 2;
 
   grpc_byte_buffer *request_payload_recv;
-
+  grpc_byte_buffer *response_payload;
 
   // init crap
   grpc_call_details_init(&details);
@@ -204,7 +204,6 @@ List run(List target, CharacterVector hoststring, List hooks) {
       grpc_status_code status_code = GRPC_STATUS_UNKNOWN;
       char const *status_details_string = "Unknown error";
 
-      grpc_byte_buffer *response_payload;
       grpc_slice response_payload_slice;
 
       // Fire callback
