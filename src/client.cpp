@@ -135,7 +135,9 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
   if (event.success == 0) {
     stop("gRPC c++ call error");
   }
-  // Rcout << event.success << '\n';
+  if (!response_payload_recv) {
+    stop("No response from the gRPC server");
+  }
 
   // client_batch[grpc.opType.SEND_INITIAL_METADATA] =
   //   metadata._getCoreRepresentation();
