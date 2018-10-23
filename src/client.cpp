@@ -153,7 +153,15 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
   // Call Header, followed by optional Initial-Metadata, followed by zero or more Payload Messages
   RGRPC_LOG("Read response Slice");
   grpc_byte_buffer_reader bbr;
-  grpc_byte_buffer_reader_init(&bbr, response_payload_recv);
+   
+  try {
+    grpc_byte_buffer_reader_init(&bbr, response_payload_recv);
+  }
+  catch (std::exception& e) {
+    Rcout << "Segfault" << e.what() << std::endl;
+    stop("Segfault in C++");
+  }
+
   grpc_slice response_payload_slice = grpc_byte_buffer_reader_readall(&bbr);
   RawVector response_payload_raw = sliceToRaw2(response_payload_slice);
   
