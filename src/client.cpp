@@ -125,14 +125,14 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
   
   RGRPC_LOG("Starting batch...");
   error = grpc_call_start_batch(c, ops, (size_t)(op - ops), tag(1), NULL);
-  if (error != GRPC_CALL_OK) {
+  if (error != GRPC_CALL_OK) { // 0
     stop("gRPC c++ call start failed");
   }
   event = grpc_completion_queue_next(cq, deadline, RESERVED); //actually does the work
-  if (event.type == GRPC_QUEUE_TIMEOUT) {
+  if (event.type == GRPC_QUEUE_TIMEOUT) { // 1
     stop("gRPC c++ call timeout");
   }
-  if (event.type != GRPC_OP_COMPLETE) {
+  if (event.success == 0) {
     stop("gRPC c++ call error");
   }
   // Rcout << event.success << '\n';
