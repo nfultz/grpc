@@ -215,24 +215,23 @@ List run(List target, CharacterVector hoststring, List hooks) {
         Function callback = as<Rcpp::Function>(target[as<std::string>(method[0])]);
 
         // TODO try/catch
-        // RawVector response_payload_raw = grpcError("UNIMPLEMENTED");
-        // try {
-        //   Rcout << "Call start: " << std::endl;
-        //   response_payload_raw = callback(request_payload_raw);
-        //   Rcout << "Call finished: " << std::endl;
-        // } catch(...) {
-        //   // TODO call R fn
-        //   Rcout << "Call failed: " << std::endl;
-        //   // RawVector response_payload_raw = grpcError("foobar");
-        // }
+        try {
+          
+          Rcout << "Call start: " << std::endl;
+          response_payload_raw = callback(request_payload_raw);
+          Rcout << "Call finished: " << std::endl;
 
-        response_payload_raw = callback(request_payload_raw);
+          runFunctionIfProvided(hooks, "event_processed", params);
+          RGRPC_LOG("callback()");
 
-        runFunctionIfProvided(hooks, "event_processed", params);
-        RGRPC_LOG("callback()");
-
-        status_code = GRPC_STATUS_OK;
-        status_details_string = "OK";
+          status_code = GRPC_STATUS_OK;
+          status_details_string = "OK";
+          
+        } catch(...) {
+          // TODO call R fn
+          Rcout << "Call failed: " << std::endl;
+          // RawVector response_payload_raw = grpcError("foobar");
+        }
 
       } else {
 
@@ -290,8 +289,10 @@ List run(List target, CharacterVector hoststring, List hooks) {
       // GPR_ASSERT(GRPC_CALL_OK == error);
 
       // Rcout << "response cleanup...\n";
-      grpc_byte_buffer_destroy(response_payload);
-      grpc_slice_unref(response_payload_slice);
+      if (status_code == GRPC_STATUS_OK) {
+        grpc_byte_buffer_destroy(response_payload);
+        grpc_slice_unref(response_payload_slice);
+      }
 
       //
       //
