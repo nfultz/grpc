@@ -204,8 +204,6 @@ List run(List target, CharacterVector hoststring, List hooks) {
       grpc_status_code status_code = GRPC_STATUS_UNKNOWN;
       char const *status_details_string = "Unknown error";
 
-      grpc_slice response_payload_slice;
-
       // Fire callback
       if (target.containsElementNamed(method[0])) {
 
@@ -223,8 +221,9 @@ List run(List target, CharacterVector hoststring, List hooks) {
 
           int len = response_payload_raw.length();
           SEXP raw_ = response_payload_raw;
-          response_payload_slice = grpc_slice_from_copied_buffer((char*) RAW(raw_), len);
+          grpc_slice response_payload_slice = grpc_slice_from_copied_buffer((char*) RAW(raw_), len);
           response_payload = grpc_raw_byte_buffer_create(&response_payload_slice, 1);
+          grpc_slice_unref(response_payload_slice);
           
         } catch(...) {
           RGRPC_LOG("callback() failed");
@@ -283,7 +282,6 @@ List run(List target, CharacterVector hoststring, List hooks) {
       // Rcout << "response cleanup...\n";
       if (status_code == GRPC_STATUS_OK) {
         grpc_byte_buffer_destroy(response_payload);
-        grpc_slice_unref(response_payload_slice);
       }
 
       //
