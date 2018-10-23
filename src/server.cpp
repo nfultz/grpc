@@ -277,12 +277,8 @@ List run(List target, CharacterVector hoststring, List hooks) {
       grpc_completion_queue_next(queue, c_timeout, RESERVED); //actually does the work
       // Rcout << "Hangup done...\n";
 
-      // GPR_ASSERT(GRPC_CALL_OK == error);
-
       // Rcout << "response cleanup...\n";
-      if (status_code == GRPC_STATUS_OK) {
-        grpc_byte_buffer_destroy(response_payload);
-      }
+      grpc_byte_buffer_destroy(response_payload);
 
       //
       //
