@@ -204,7 +204,6 @@ List run(List target, CharacterVector hoststring, List hooks) {
       grpc_status_code status_code = GRPC_STATUS_UNKNOWN;
       char const *status_details_string = "Unknown error";
 
-      RawVector response_payload_raw = no_init(1);
       grpc_byte_buffer *response_payload;
       grpc_slice response_payload_slice;
 
@@ -216,12 +215,17 @@ List run(List target, CharacterVector hoststring, List hooks) {
 
         try {
           
-          response_payload_raw = callback(request_payload_raw);
+          RawVector response_payload_raw = callback(request_payload_raw);
           runFunctionIfProvided(hooks, "event_processed", params);
           RGRPC_LOG("callback() success");
 
           status_code = GRPC_STATUS_OK;
           status_details_string = "OK";
+
+          int len = response_payload_raw.length();
+          SEXP raw_ = response_payload_raw;
+          response_payload_slice = grpc_slice_from_copied_buffer((char*) RAW(raw_), len);
+          response_payload = grpc_raw_byte_buffer_create(&response_payload_slice, 1);
           
         } catch(...) {
           RGRPC_LOG("callback() failed");
@@ -247,11 +251,6 @@ List run(List target, CharacterVector hoststring, List hooks) {
       if (status_code == GRPC_STATUS_OK) {
 
         RGRPC_LOG("GRPC_OP_SEND_MESSAGE");
-
-        int len = response_payload_raw.length();
-        SEXP raw_ = response_payload_raw;
-        response_payload_slice = grpc_slice_from_copied_buffer((char*) RAW(raw_), len);
-        response_payload = grpc_raw_byte_buffer_create(&response_payload_slice, 1);
 
         op->op = GRPC_OP_SEND_MESSAGE;
         op->data.send_message.send_message = response_payload;
