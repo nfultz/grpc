@@ -1,12 +1,11 @@
 #include <Rcpp.h>
 #include <grpc/grpc.h>
 #include <grpc/impl/codegen/byte_buffer_reader.h>
+#include <grpc/slice.h>
 
 #include "common.h"
 
 using namespace Rcpp;
-
-
 
 static void *tag(intptr_t i) { return (void *)i; }
 
@@ -14,9 +13,7 @@ RawVector sliceToRaw2(grpc_slice slice){
 
   int n = GRPC_SLICE_LENGTH(slice);
 
-  char* data =
-    const_cast<char *>(reinterpret_cast<const char *>(
-        GRPC_SLICE_START_PTR(slice)));
+  char* data = grpc_slice_to_c_string(slice);
 
   RGRPC_LOG("Slice2Raw:\nn: " << n << "\nData: " << data);
 
@@ -128,17 +125,19 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
   
   RGRPC_LOG("Starting batch...");
   error = grpc_call_start_batch(c, ops, (size_t)(op - ops), tag(1), NULL);
-  if (error != GRPC_CALL_OK) {
+  if (error != GRPC_CALL_OK) { // 0
     stop("gRPC c++ call start failed");
   }
   event = grpc_completion_queue_next(cq, deadline, RESERVED); //actually does the work
-  if (event.type == GRPC_QUEUE_TIMEOUT) {
+  if (event.type == GRPC_QUEUE_TIMEOUT) { // 1
     stop("gRPC c++ call timeout");
   }
-  if (event.type != GRPC_OP_COMPLETE) {
+  if (event.success == 0) {
     stop("gRPC c++ call error");
   }
-  // Rcout << event.success << '\n';
+  if (!response_payload_recv) {
+    stop("No response from the gRPC server");
+  }
 
   // client_batch[grpc.opType.SEND_INITIAL_METADATA] =
   //   metadata._getCoreRepresentation();
@@ -154,7 +153,15 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
   // Call Header, followed by optional Initial-Metadata, followed by zero or more Payload Messages
   RGRPC_LOG("Read response Slice");
   grpc_byte_buffer_reader bbr;
-  grpc_byte_buffer_reader_init(&bbr, response_payload_recv);
+   
+  try {
+    grpc_byte_buffer_reader_init(&bbr, response_payload_recv);
+  }
+  catch (std::exception& e) {
+    Rcout << "Segfault" << e.what() << std::endl;
+    stop("Segfault in C++");
+  }
+
   grpc_slice response_payload_slice = grpc_byte_buffer_reader_readall(&bbr);
   RawVector response_payload_raw = sliceToRaw2(response_payload_slice);
   
