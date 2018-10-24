@@ -1,4 +1,6 @@
-helloserver Hello, World! server implementation
-helloclient Hello, World! client implementation
+helloserver The standard Hello, World! server implementation
+helloclient The standard Hello, World! client implementation
+health-check-server The standard Hello, World! server implementation with standard health check
+health-check-client The standard Hello, World! client implementation with standard health check
 iris-server Building a basic model and using that for live-scoring
 iris-client A basic client to the live-scoring server

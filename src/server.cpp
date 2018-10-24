@@ -2,17 +2,20 @@
 #include <grpc/grpc.h>
 #include <grpc/impl/codegen/byte_buffer_reader.h>
 #include "common.h"
+#include <string>
+#include <grpc/slice.h>
 
 using namespace Rcpp;
 
+#include <grpc++/grpc++.h>
+using grpc::Status;
+using grpc::StatusCode;
 
 #define _INTERRUPT_CHECK_PERIOD_MS 1000
 
 CharacterVector sliceToChar(grpc_slice slice){
 
-  char* data =
-  const_cast<char *>(reinterpret_cast<const char *>(
-      GRPC_SLICE_START_PTR(slice)));
+  char* data = grpc_slice_to_c_string(slice);
 
   CharacterVector out(1);
   out[0] = data;
@@ -24,9 +27,7 @@ RawVector sliceToRaw(grpc_slice slice){
 
   int n = GRPC_SLICE_LENGTH(slice);
 
-  char* data =
-    const_cast<char *>(reinterpret_cast<const char *>(
-        GRPC_SLICE_START_PTR(slice)));
+  char* data = grpc_slice_to_c_string(slice);
 
   RGRPC_LOG("Slice2Raw:\nn: " << n << "\nData: " << data);
 
@@ -38,11 +39,25 @@ RawVector sliceToRaw(grpc_slice slice){
   return out;
 }
 
+void runFunctionIfProvided(List hooks, std::string hook, List params){
 
+  if (hooks.containsElementNamed(hook.c_str())){
+    RGRPC_LOG("[HOOK " << hook << "] found and starting");
+    Function hookFunction = hooks[hook];
+    hookFunction(params);
+    RGRPC_LOG("[HOOK " << hook << "] finished");
+  } else {
+    RGRPC_LOG("[HOOK " << hook << "] not found");
+  }
+
+}
 
 // [[Rcpp::export]]
-List run(List target, CharacterVector hoststring) {
+List run(List target, CharacterVector hoststring, List hooks) {
 
+  // to passed to R hooks
+  List params = List::create();
+  
   bool done = false;
   // grpc_arg arg = {GRPC_ARG_STRING, "key", "value"};
   // grpc_channel_args channel_args = {1, &arg};
@@ -50,20 +65,24 @@ List run(List target, CharacterVector hoststring) {
   RGRPC_LOG("Create Server");
 
   grpc_server* server = grpc_server_create(NULL /*&channel_args*/, 0);
-
+  runFunctionIfProvided(hooks, "server_create", params);
 
   // create completion queue
   RGRPC_LOG("Creating Queue");
   grpc_completion_queue* queue = grpc_completion_queue_create_for_next(RESERVED); //todo
   grpc_server_register_completion_queue(server, queue, RESERVED);
-
+  runFunctionIfProvided(hooks, "queue_create", params);
+  
   RGRPC_LOG("Bind");
 
-  grpc_server_add_insecure_http2_port(server, hoststring[0]);
+  int port = grpc_server_add_insecure_http2_port(server, hoststring[0]);
+  params["port"] = port;
+  runFunctionIfProvided(hooks, "bind", params);
 
   // rock and roll
-  Rcout << "Starting Server...";
+  RGRPC_LOG("Starting Server on port " << port);
   grpc_server_start(server);
+  runFunctionIfProvided(hooks, "server_start", params);
 
   grpc_call *call;
   grpc_call_details details;
@@ -73,17 +92,15 @@ List run(List target, CharacterVector hoststring) {
   grpc_op *op;
   int was_cancelled = 2;
 
-
   grpc_byte_buffer *request_payload_recv;
   grpc_byte_buffer *response_payload;
 
   // init crap
   grpc_call_details_init(&details);
   grpc_metadata_array_init(&request_meta);
+  runFunctionIfProvided(hooks, "run", params);
 
-
-
-  Rcout << "\t[RUNNING]\n";
+  RGRPC_LOG("[RUNNING]");
 
   // Copy pasted from node module...
   grpc_event event;
@@ -99,9 +116,9 @@ List run(List target, CharacterVector hoststring) {
     event = grpc_completion_queue_next(queue, c_timeout, RESERVED);
 
     RGRPC_LOG("Event type: " << event.type);
-
     CharacterVector method =     sliceToChar(details.method);
     RGRPC_LOG("Event method: " << method);
+    params["event_method"] = method;
 
     if (event.type == GRPC_OP_COMPLETE) {
       const char *error_message;
@@ -109,13 +126,13 @@ List run(List target, CharacterVector hoststring) {
         error_message = NULL;
       } else {
         error_message = "The async function encountered an error";
-        Rcout << error_message << "\n";
+        RGRPC_LOG(error_message);
         continue;
       }
       
 
       RGRPC_LOG("Processing event method: " << method );
-      
+      runFunctionIfProvided(hooks, "event_received", params);     
       
       // CompleteTag(event.tag, error_message);
       // todo distpatch back to R here
@@ -183,27 +200,42 @@ List run(List target, CharacterVector hoststring) {
       // error = grpc_call_start_batch(call, ops, (size_t)(op - ops), NULL, NULL);
       // grpc_completion_queue_next(queue, c_timeout, RESERVED); //actually does the work
 
+      // default status code
+      grpc_status_code status_code = GRPC_STATUS_UNKNOWN;
+      char const *status_details_string = "Unknown error";
 
       // Fire callback
-      Function callback = as<Rcpp::Function>(target[as<std::string>(method[0])]);
+      if (target.containsElementNamed(method[0])) {
 
-      RGRPC_LOG("callback()");
-      RawVector response_payload_raw = callback(request_payload_raw);
+        RGRPC_LOG("Method found: " << method[0]);
+        Function callback = as<Rcpp::Function>(target[as<std::string>(method[0])]);
 
-      SEXP raw_ = response_payload_raw;
+        try {
+          
+          RawVector response_payload_raw = callback(request_payload_raw);
+          runFunctionIfProvided(hooks, "event_processed", params);
+          RGRPC_LOG("callback() success");
 
-      // char buffer[50000] ;
-      // // char buffer2[5000];
-      int len = response_payload_raw.length();
-      // for(int i = 0; i < len; i++){
-      //   buffer[i] = (char) response_payload_raw[i];
-      //   // sprintf(buffer2, "%02x ", buffer[i]);
-      //   // Rcout << buffer2;
-      // }
-      // Rcout << "copied " << len <<  " bytes\n";
-      // grpc_slice response_payload_slice = grpc_slice_from_copied_buffer(buffer, len);
+          status_code = GRPC_STATUS_OK;
+          status_details_string = "OK";
 
-      grpc_slice response_payload_slice = grpc_slice_from_copied_buffer((char*) RAW(raw_), len);
+          int len = response_payload_raw.length();
+          SEXP raw_ = response_payload_raw;
+          grpc_slice response_payload_slice = grpc_slice_from_copied_buffer((char*) RAW(raw_), len);
+          response_payload = grpc_raw_byte_buffer_create(&response_payload_slice, 1);
+          grpc_slice_unref(response_payload_slice);
+          
+        } catch(...) {
+          RGRPC_LOG("callback() failed");
+        }
+
+      } else {
+
+        RGRPC_LOG("Method not found: " << method[0]);
+        status_code = GRPC_STATUS_UNIMPLEMENTED;
+        status_details_string = "Method not implemented";
+
+      }
 
       memset(ops, 0, sizeof(ops));
 
@@ -214,25 +246,26 @@ List run(List target, CharacterVector hoststring) {
       op->reserved = NULL;
       op++;
 
+      if (status_code == GRPC_STATUS_OK) {
 
-      RGRPC_LOG("GRPC_OP_SEND_MESSAGE");
-      response_payload = grpc_raw_byte_buffer_create(&response_payload_slice, 1);
+        RGRPC_LOG("GRPC_OP_SEND_MESSAGE");
 
-      // op = ops;
-      op->op = GRPC_OP_SEND_MESSAGE;
-      op->data.send_message.send_message = response_payload;
-      op->flags = 0;
-      op->reserved = NULL;
-      op++;
-
-
+        op->op = GRPC_OP_SEND_MESSAGE;
+        op->data.send_message.send_message = response_payload;
+        op->flags = 0;
+        op->reserved = NULL;
+        op++;
+ 
+      }
 
       RGRPC_LOG("GRPC_OP_SEND_STATUS_FROM_SERVER");
       // op = ops;
       op->op = GRPC_OP_SEND_STATUS_FROM_SERVER;
       op->data.send_status_from_server.trailing_metadata_count = 0;
-      op->data.send_status_from_server.status = GRPC_STATUS_OK;
-      grpc_slice status_details = grpc_slice_from_static_string("OK");
+
+      op->data.send_status_from_server.status = status_code;
+      grpc_slice status_details = grpc_slice_from_static_string(status_details_string);
+
       op->data.send_status_from_server.status_details = &status_details;
       op->flags = 0;
       op->reserved = NULL;
@@ -244,13 +277,8 @@ List run(List target, CharacterVector hoststring) {
       grpc_completion_queue_next(queue, c_timeout, RESERVED); //actually does the work
       // Rcout << "Hangup done...\n";
 
-      // GPR_ASSERT(GRPC_CALL_OK == error);
-
       // Rcout << "response cleanup...\n";
       grpc_byte_buffer_destroy(response_payload);
-      grpc_slice_unref(response_payload_slice);
-
-
 
       //
       //
@@ -269,7 +297,7 @@ List run(List target, CharacterVector hoststring) {
     try{
       Rcpp::checkUserInterrupt();
     } catch (Rcpp::internal::InterruptedException ie){
-      Rcout << "Stopping server...";
+      RGRPC_LOG("Stopping server...");
       done = true;
     }
     
@@ -279,12 +307,13 @@ List run(List target, CharacterVector hoststring) {
 
   //shutdown
   RGRPC_LOG("Shutting down\n");
+  runFunctionIfProvided(hooks, "shutdown", params);
   grpc_server_shutdown_and_notify(server, queue, 0 /* tag */);
   grpc_server_cancel_all_calls(server);
   grpc_completion_queue_next(queue, gpr_inf_future(GPR_CLOCK_REALTIME), NULL);
   grpc_server_destroy(server);
-  Rcout << "\t[STOPPED]\n";
-  
+  RGRPC_LOG("[STOPPED]");
+  runFunctionIfProvided(hooks, "stopped", params);  
 
   return List::create();
 }

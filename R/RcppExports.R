@@ -5,12 +5,14 @@ fetch <- function(server, method, requestArg) {
     .Call('_grpc_fetch', PACKAGE = 'grpc', server, method, requestArg)
 }
 
+#' Check grpc version
+#' @return version string and what g stands for
 #' @export
 grpc_version <- function() {
     .Call('_grpc_grpc_version', PACKAGE = 'grpc')
 }
 
-run <- function(target, hoststring) {
-    .Call('_grpc_run', PACKAGE = 'grpc', target, hoststring)
+run <- function(target, hoststring, hooks) {
+    .Call('_grpc_run', PACKAGE = 'grpc', target, hoststring, hooks)
 }
 

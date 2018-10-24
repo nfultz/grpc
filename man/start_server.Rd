@@ -4,16 +4,21 @@
 \alias{start_server}
 \title{Start a gRPC server}
 \usage{
-start_server(impl, channel)
+start_server(impl, channel, hooks = grpc_default_hooks())
 }
 \arguments{
 \item{impl}{an implementation of a proto service}
 
 \item{channel}{a channel string in 'host:port' format}
+
+\item{hooks}{list of R function(s) with \code{params} argument as a list to be run at different parts of the C++ calls. Supported hooks: \code{server_create}, \code{queue_create}, \code{bind} (when \code{params$port} becomes available), \code{server_start}, \code{run}, \code{shutdown}, \code{stopped}, \code{exit}}
 }
 \value{
 none
 }
 \description{
 Start a gRPC server
+}
+\seealso{
+\code{\link{grpc_default_hooks}}
 }
