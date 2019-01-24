@@ -12,10 +12,21 @@ client <- grpc_client(impl, "localhost:50051")
 
 
 for(who in c("Neal", "Gergely")){
-    who <- client$SayHello$build(name=who)
+    hello <- client$SayHello$build(name=who)
+    message <- client$SayHello$call(hello)
     
-    hello <- client$SayHello$call(who)
+    print(message)
+    print(as.list(message))
+
+    thanks <- client$SayThanks$build(name=who)
+    message <- client$SayThanks$call(thanks)
     
-    print(hello)
-    print(as.list(hello))
+    print(message)
+    print(as.list(message))
+
+    bye <- client$SayBye$build(name=who)
+    message <- client$SayBye$call(bye)
+    
+    print(message)
+    print(as.list(message))
 }
