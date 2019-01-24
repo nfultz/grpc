@@ -35,7 +35,7 @@ read_services <- function(file){
 
     w <- "RequestType"
 
-    while(tokens[i] != '}'){
+    while(tokens[i] != ';'){
 
       if(tokens[i] == '('){
         i <- i + 1
