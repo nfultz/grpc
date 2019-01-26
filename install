@@ -3,6 +3,10 @@ cd grpc.git/
 git checkout tags/release-0_11_1
 git submodule update --init
 cd third_party/protobuf/
+## The file 'third_party/protobuf/autogen.sh' needs to be altered since the url
+## 'https://googlemock.googlecode.com/files/gmock-1.7.0.zip' 
+## is outdated I changed to
+## wget http://pkgs.fedoraproject.org/repo/pkgs/gmock/gmock-1.7.0.zip/073b984d8798ea1594f5e44d85b20d66/gmock-1.7.0.zip
 ./autogen.sh
 ./configure
 make -j8
