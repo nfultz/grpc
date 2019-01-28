@@ -1,4 +1,37 @@
-# grpc - An R library for RPC
+# grpc
+
+An **R** library for [**GRPC**](https://grpc.io/) a high-performance, open-source universal RPC framework.
+
+## Installation - Debian
+
+### Pre-requisites
+
+The following is copied from [gRPC C++ - Building from source](https://github.com/grpc/grpc/blob/master/BUILDING.md)
+```{bash}
+sudo apt-get install build-essential autoconf libtool pkg-config
+## If you plan to build from source and run tests, install the following as well:
+sudo apt-get install libgflags-dev libgtest-dev
+sudo apt-get install clang libc++-dev
+```
+
+### Build from source
+## Download and Install grpc
+```{bash}
+git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc grpc_base
+cd grpc_base
+git submodule update --init
+
+## In gcc 8.2 I got an error which I could fix with (see https://github.com/grpc/grpc/issues/17781)
+## with the following two export lines. (uncomment and run if you gat an error when calling make).
+#export CFLAGS='-g -O2 -w' 
+#export CXXFLAGS='-g -O2 -w'
+
+make
+sudo make install
+sudo ldconfig
+```
+
+# Original 
 
 [![Build Status](https://travis-ci.org/nfultz/grpc.svg)](https://travis-ci.org/nfultz/grpc)
 
