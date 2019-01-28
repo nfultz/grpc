@@ -14,8 +14,7 @@ sudo apt-get install libgflags-dev libgtest-dev
 sudo apt-get install clang libc++-dev
 ```
 
-### Build from source
-## Download and Install grpc
+### Download and Install grpc
 ```shell
 git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc grpc_base
 cd grpc_base
