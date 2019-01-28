@@ -7,7 +7,7 @@ An **R** library for [**GRPC**](https://grpc.io/) a high-performance, open-sourc
 ### Pre-requisites
 
 The following is copied from [gRPC C++ - Building from source](https://github.com/grpc/grpc/blob/master/BUILDING.md)
-```{bash}
+```bash
 sudo apt-get install build-essential autoconf libtool pkg-config
 ## If you plan to build from source and run tests, install the following as well:
 sudo apt-get install libgflags-dev libgtest-dev
@@ -16,7 +16,7 @@ sudo apt-get install clang libc++-dev
 
 ### Build from source
 ## Download and Install grpc
-```{bash}
+```bash
 git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc grpc_base
 cd grpc_base
 git submodule update --init
