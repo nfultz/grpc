@@ -15,6 +15,7 @@ grpc_client <- function(impl, channel) {
       
       list(
         call = function(x) read(ResponseDescriptor, fetch(channel, fn$name, serialize(x, NULL))),
+        callWithMetadata = function(x, metadata) read(ResponseDescriptor, fetchWithMetadata(channel, fn$name, serialize(x, NULL), metadata)),
         build = function(...) new(RequestDescriptor, ...)
       )
     })
