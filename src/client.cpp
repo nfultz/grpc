@@ -28,7 +28,7 @@ RawVector sliceToRaw2(grpc_slice slice){
 
 
 // [[Rcpp::export]]
-RawVector fetchWithMetadata(CharacterVector server, CharacterVector method, RawVector requestArg, CharacterVector metadata) {
+RawVector fetch(CharacterVector server, CharacterVector method, RawVector requestArg, CharacterVector metadata) {
   
   // gpr_timespec deadline = five_seconds_from_now();
   
@@ -66,19 +66,16 @@ RawVector fetchWithMetadata(CharacterVector server, CharacterVector method, RawV
   grpc_op ops[6];
   grpc_op *op;
 
-  int METADATA_LENGTH = metadata.length() / 2;
-  grpc_metadata meta_c[METADATA_LENGTH];
+  int metadata_length = metadata.length() / 2;
+  grpc_metadata meta_c[metadata_length];
 
-  if (METADATA_LENGTH > 0) {
-    for(int i = 0; i < METADATA_LENGTH; i++) {
-      meta_c[i] = {grpc_slice_from_static_string(metadata[i * 2]),
-          grpc_slice_from_static_string(metadata[i * 2 + 1]),
-          0,
-          {{nullptr, nullptr, nullptr, nullptr}}};
-    }
+  for(int i = 0; i < metadata_length; i++) {
+    meta_c[i] = {grpc_slice_from_static_string(metadata[i * 2]),
+        grpc_slice_from_static_string(metadata[i * 2 + 1]),
+        0,
+        {{nullptr, nullptr, nullptr, nullptr}}};
   }
 
-  
   grpc_metadata_array initial_metadata_recv;
   grpc_metadata_array trailing_metadata_recv;
   grpc_metadata_array request_metadata_recv;
@@ -104,14 +101,11 @@ RawVector fetchWithMetadata(CharacterVector server, CharacterVector method, RawV
   memset(ops, 0, sizeof(ops));
   op = ops;
   op->op = GRPC_OP_SEND_INITIAL_METADATA;
-  if (METADATA_LENGTH > 0) {
-    op->data.send_initial_metadata.count = METADATA_LENGTH;
+  op->data.send_initial_metadata.count = metadata_length;
+  if (metadata_length > 0) {
     op->data.send_initial_metadata.metadata = meta_c;
   }
   else {
-    op->data.send_initial_metadata.count = 0;
-    op->data.send_initial_metadata.maybe_compression_level.is_set = false;    
-  op->data.send_initial_metadata.maybe_compression_level.is_set = false;
     op->data.send_initial_metadata.maybe_compression_level.is_set = false;    
   }
   op->flags = 0;
@@ -215,12 +209,4 @@ RawVector fetchWithMetadata(CharacterVector server, CharacterVector method, RawV
 
   return response_payload_raw;
   
-}
-
-// [[Rcpp::export]]
-RawVector fetch(CharacterVector server, CharacterVector method, RawVector requestArg) {
-
-  CharacterVector emptyVector(0);
-  return fetchWithMetadata(server, method, requestArg, emptyVector);
-
 }

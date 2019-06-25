@@ -5,9 +5,9 @@
 
 using namespace Rcpp;
 
-// fetchWithMetadata
-RawVector fetchWithMetadata(CharacterVector server, CharacterVector method, RawVector requestArg, CharacterVector metadata);
-RcppExport SEXP _grpc_fetchWithMetadata(SEXP serverSEXP, SEXP methodSEXP, SEXP requestArgSEXP, SEXP metadataSEXP) {
+// fetch
+RawVector fetch(CharacterVector server, CharacterVector method, RawVector requestArg, CharacterVector metadata);
+RcppExport SEXP _grpc_fetch(SEXP serverSEXP, SEXP methodSEXP, SEXP requestArgSEXP, SEXP metadataSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -15,20 +15,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< CharacterVector >::type method(methodSEXP);
     Rcpp::traits::input_parameter< RawVector >::type requestArg(requestArgSEXP);
     Rcpp::traits::input_parameter< CharacterVector >::type metadata(metadataSEXP);
-    rcpp_result_gen = Rcpp::wrap(fetchWithMetadata(server, method, requestArg, metadata));
-    return rcpp_result_gen;
-END_RCPP
-}
-// fetch
-RawVector fetch(CharacterVector server, CharacterVector method, RawVector requestArg);
-RcppExport SEXP _grpc_fetch(SEXP serverSEXP, SEXP methodSEXP, SEXP requestArgSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< CharacterVector >::type server(serverSEXP);
-    Rcpp::traits::input_parameter< CharacterVector >::type method(methodSEXP);
-    Rcpp::traits::input_parameter< RawVector >::type requestArg(requestArgSEXP);
-    rcpp_result_gen = Rcpp::wrap(fetch(server, method, requestArg));
+    rcpp_result_gen = Rcpp::wrap(fetch(server, method, requestArg, metadata));
     return rcpp_result_gen;
 END_RCPP
 }

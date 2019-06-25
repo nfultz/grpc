@@ -11,7 +11,7 @@ impl <- read_services(spec)
 client <- grpc_client(impl, "localhost:50051")
 
 
-for(who in c("Neal", "Gergely")){
+for(who in c("Neal", "Gergely", "Jay")){
     hello <- client$SayHello$build(name=who)
     message <- client$SayHello$call(hello)
     
