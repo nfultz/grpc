@@ -28,7 +28,7 @@ RawVector sliceToRaw2(grpc_slice slice){
 
 
 // [[Rcpp::export]]
-RawVector fetch(CharacterVector server, CharacterVector method, RawVector requestArg) {
+RawVector fetch(CharacterVector server, CharacterVector method, RawVector requestArg, CharacterVector metadata) {
   
   // gpr_timespec deadline = five_seconds_from_now();
   
@@ -65,7 +65,17 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
   // perform request
   grpc_op ops[6];
   grpc_op *op;
-  
+
+  int metadata_length = metadata.length() / 2;
+  grpc_metadata meta_c[metadata_length];
+
+  for(int i = 0; i < metadata_length; i++) {
+    meta_c[i] = {grpc_slice_from_static_string(metadata[i * 2]),
+        grpc_slice_from_static_string(metadata[i * 2 + 1]),
+        0,
+        {{nullptr, nullptr, nullptr, nullptr}}};
+  }
+
   grpc_metadata_array initial_metadata_recv;
   grpc_metadata_array trailing_metadata_recv;
   grpc_metadata_array request_metadata_recv;
@@ -91,8 +101,13 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
   memset(ops, 0, sizeof(ops));
   op = ops;
   op->op = GRPC_OP_SEND_INITIAL_METADATA;
-  op->data.send_initial_metadata.count = 0;
-  op->data.send_initial_metadata.maybe_compression_level.is_set = false;
+  op->data.send_initial_metadata.count = metadata_length;
+  if (metadata_length > 0) {
+    op->data.send_initial_metadata.metadata = meta_c;
+  }
+  else {
+    op->data.send_initial_metadata.maybe_compression_level.is_set = false;    
+  }
   op->flags = 0;
   op->reserved = NULL;
   op++;

@@ -14,7 +14,7 @@ grpc_client <- function(impl, channel) {
       ResponseDescriptor <- P(fn[["ResponseType"]]$proto)
       
       list(
-        call = function(x) read(ResponseDescriptor, fetch(channel, fn$name, serialize(x, NULL))),
+        call = function(x, metadata=character(0)) read(ResponseDescriptor, fetch(channel, fn$name, serialize(x, NULL), metadata)),
         build = function(...) new(RequestDescriptor, ...)
       )
     })
