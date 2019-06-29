@@ -1,7 +1,7 @@
 Package: grpc
 Type: Package
 Title: gRPC Library
-Version: 0.1.0
+Version: 0.2.0
 Author: Neal Fultz, Google
 Maintainer: Neal Fultz <nfultz@gmail.com>
 Description: Client and server scaffolding for Google's Remote Procedure Call framework
