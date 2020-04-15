@@ -28,7 +28,7 @@ RawVector sliceToRaw2(grpc_slice slice){
 
 
 // [[Rcpp::export]]
-RawVector fetch(CharacterVector server, CharacterVector method, RawVector requestArg, CharacterVector metadata) {
+RawVector fetch(CharacterVector server, CharacterVector method, RawVector requestArg, CharacterVector metadata, int client_deadline) {
   
   // gpr_timespec deadline = five_seconds_from_now();
   
@@ -50,7 +50,7 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
     
   grpc_channel *channel = grpc_insecure_channel_create(server[0], NULL, RESERVED);
   
-  gpr_timespec deadline = gpr_time_add(gpr_now(GPR_CLOCK_REALTIME), gpr_time_from_millis(5000, GPR_TIMESPAN));
+  gpr_timespec deadline = gpr_time_add(gpr_now(GPR_CLOCK_REALTIME), gpr_time_from_millis(client_deadline*1000, GPR_TIMESPAN));
   
   RGRPC_LOG("Create Call");
   c = grpc_channel_create_call(
