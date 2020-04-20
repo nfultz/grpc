@@ -8,6 +8,7 @@ library(grpc)
 
 spec <- system.file('examples/helloworld.proto', package = 'grpc')  
 impl <- read_services(spec)
+options(client_deadline = 10)
 client <- grpc_client(impl, "localhost:50051")
 
 
