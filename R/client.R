@@ -5,7 +5,7 @@
 #' @return client handle
 #' @importFrom RProtoBuf P serialize read new
 #' @export
-grpc_client <- function(impl, channel, client_deadline) {
+grpc_client <- function(impl, channel) {
 
   client_deadline <- getOption("client_deadline", default = 5)
   
