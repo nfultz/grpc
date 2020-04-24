@@ -19,7 +19,7 @@ for(who in c("Neal", "Gergely", "Jay")){
     print(as.list(message))
 
     thanks <- client$SayThanks$build(name=who)
-    message <- client$SayThanks$callWithMetadata(thanks, c("key1", "val1"))
+    message <- client$SayThanks$call(thanks, c("key1", "val1"))
     
     print(message)
     print(as.list(message))
