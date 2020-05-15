@@ -17,4 +17,4 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get install libcurl4-openssl-dev libxml2-dev
-          R -e 'demo("helloserver")'
+          R -e 'impl <- read_services(spec)'
