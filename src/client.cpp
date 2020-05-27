@@ -1,9 +1,6 @@
-#include <Rcpp.h>
-#include <grpc/grpc.h>
-#include <grpc/impl/codegen/byte_buffer_reader.h>
-#include <grpc/slice.h>
-
-#include "common.h"
+#include <iostream>
+#include <fstream>
+#include "Client_Libraries.h"
 
 using namespace Rcpp;
 
@@ -25,10 +22,31 @@ RawVector sliceToRaw2(grpc_slice slice){
   return out;
 }
 
+static std::string get_file_contents(const char *fpath)
+{
+  std::ifstream finstream(fpath);
 
+  std::string contents(
+	  (std::istreambuf_iterator<char>(finstream)),
+	  std::istreambuf_iterator<char>()
+	  );
+
+  return contents;
+}
+
+grpc_channel_credentials* Get_Client_Credentials(const char* path){
+
+  std::string ca_cert_pem = get_file_contents(((std::string)path + "ca-cert.pem").c_str());
+
+  grpc_channel_credentials* Creds = grpc_ssl_credentials_create(
+    ca_cert_pem.c_str(), nullptr, nullptr, nullptr);
+
+  return Creds;
+}
 
 // [[Rcpp::export]]
-RawVector fetch(CharacterVector server, CharacterVector method, RawVector requestArg, CharacterVector metadata, int client_deadline) {
+RawVector fetch(CharacterVector server, CharacterVector method, RawVector requestArg, CharacterVector metadata, 
+                int client_deadline, bool UseTLS, CharacterVector CertPath) {
   
   // gpr_timespec deadline = five_seconds_from_now();
   
@@ -47,8 +65,18 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
   
   
   const grpc_slice *sp = &server_slice;
-    
-  grpc_channel *channel = grpc_insecure_channel_create(server[0], NULL, RESERVED);
+  
+  grpc_channel* channel;
+
+  if(UseTLS) {
+    grpc_channel_credentials* client_creds = Get_Client_Credentials(CertPath[0]);
+    channel = grpc_secure_channel_create(client_creds, server[0], NULL, nullptr);
+    grpc_channel_credentials_release(client_creds);
+  }
+
+  else {
+    channel = grpc_insecure_channel_create(server[0], NULL, nullptr);
+  }
   
   gpr_timespec deadline = gpr_time_add(gpr_now(GPR_CLOCK_REALTIME), gpr_time_from_millis(client_deadline*1000, GPR_TIMESPAN));
   
