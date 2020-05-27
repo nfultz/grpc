@@ -6,8 +6,8 @@
 using namespace Rcpp;
 
 // fetch
-RawVector fetch(CharacterVector server, CharacterVector method, RawVector requestArg, CharacterVector metadata, int client_deadline);
-RcppExport SEXP _grpc_fetch(SEXP serverSEXP, SEXP methodSEXP, SEXP requestArgSEXP, SEXP metadataSEXP, SEXP client_deadlineSEXP) {
+RawVector fetch(CharacterVector server, CharacterVector method, RawVector requestArg, CharacterVector metadata, bool UseTLS, CharacterVector CertPath);
+RcppExport SEXP _grpc_fetch(SEXP serverSEXP, SEXP methodSEXP, SEXP requestArgSEXP, SEXP metadataSEXP, SEXP UseTLSSEXP, SEXP CertPathSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -15,8 +15,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< CharacterVector >::type method(methodSEXP);
     Rcpp::traits::input_parameter< RawVector >::type requestArg(requestArgSEXP);
     Rcpp::traits::input_parameter< CharacterVector >::type metadata(metadataSEXP);
-    Rcpp::traits::input_parameter< int >::type client_deadline(client_deadlineSEXP);
-    rcpp_result_gen = Rcpp::wrap(fetch(server, method, requestArg, metadata, client_deadline));
+    Rcpp::traits::input_parameter< bool >::type UseTLS(UseTLSSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type CertPath(CertPathSEXP);
+    rcpp_result_gen = Rcpp::wrap(fetch(server, method, requestArg, metadata, UseTLS, CertPath));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -31,15 +32,17 @@ BEGIN_RCPP
 END_RCPP
 }
 // run
-List run(List target, CharacterVector hoststring, List hooks);
-RcppExport SEXP _grpc_run(SEXP targetSEXP, SEXP hoststringSEXP, SEXP hooksSEXP) {
+List run(List target, CharacterVector hoststring, List hooks, bool UseTLS, CharacterVector CertPath);
+RcppExport SEXP _grpc_run(SEXP targetSEXP, SEXP hoststringSEXP, SEXP hooksSEXP, SEXP UseTLSSEXP, SEXP CertPathSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< List >::type target(targetSEXP);
     Rcpp::traits::input_parameter< CharacterVector >::type hoststring(hoststringSEXP);
     Rcpp::traits::input_parameter< List >::type hooks(hooksSEXP);
-    rcpp_result_gen = Rcpp::wrap(run(target, hoststring, hooks));
+    Rcpp::traits::input_parameter< bool >::type UseTLS(UseTLSSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type CertPath(CertPathSEXP);
+    rcpp_result_gen = Rcpp::wrap(run(target, hoststring, hooks, UseTLS, CertPath));
     return rcpp_result_gen;
 END_RCPP
 }
