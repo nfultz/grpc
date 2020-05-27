@@ -10,7 +10,10 @@
 #' @export
 #' @seealso \code{\link{grpc_default_hooks}}
 start_server <- function(impl, channel, hooks = grpc_default_hooks()) {
-
+  
+  UseTLS <- getOption("UseTLS", default = TRUE)
+  CertPath <- getOption("CertPath", default = NULL)
+  
   if (!is.null(hooks$exit) & is.function(hooks$exit)) {
     on.exit(hooks$exit())
   }
@@ -27,7 +30,7 @@ start_server <- function(impl, channel, hooks = grpc_default_hooks()) {
 
   names(server_functions) <- vapply(impl, function(x)x$name, NA_character_)
 
-  run(server_functions, channel, hooks)
+  run(server_functions, channel, hooks, UseTLS, CertPath)
   invisible(NULL)
 }
 
