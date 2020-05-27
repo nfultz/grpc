@@ -1,9 +1,6 @@
-#include <Rcpp.h>
-#include <grpc/grpc.h>
-#include <grpc/impl/codegen/byte_buffer_reader.h>
-#include "common.h"
-#include <string>
-#include <grpc/slice.h>
+#include <iostream>
+#include <fstream>
+#include "Server_Libraries.h"
 
 using namespace Rcpp;
 
@@ -52,8 +49,40 @@ void runFunctionIfProvided(List hooks, std::string hook, List params){
 
 }
 
+static std::string get_file_contents(const char *fpath)
+{
+  std::ifstream finstream(fpath);
+
+  std::string contents(
+	  (std::istreambuf_iterator<char>(finstream)),
+	  std::istreambuf_iterator<char>()
+	  );
+
+  return contents;
+}
+
+grpc_server_credentials* Get_TLS_Credentials(const char* path) {
+
+  std::string ca_cert_pem = get_file_contents(((std::string)path + "ca-cert.pem").c_str());
+  std::string server_key_pem = get_file_contents(((std::string)path + "server-key.pem").c_str());
+  std::string server_cert_pem = get_file_contents(((std::string)path + "server-cert.pem").c_str());
+
+  grpc_ssl_pem_key_cert_pair pem_cert_key_pair =
+    {server_key_pem.c_str(), server_cert_pem.c_str()};
+
+  grpc_server_credentials* Creds =
+    grpc_ssl_server_credentials_create_ex(
+      ca_cert_pem.c_str(),
+      &pem_cert_key_pair,
+      1,
+      GRPC_SSL_DONT_REQUEST_CLIENT_CERTIFICATE,
+      nullptr);
+
+  return Creds;
+}
+
 // [[Rcpp::export]]
-List run(List target, CharacterVector hoststring, List hooks) {
+List run(List target, CharacterVector hoststring, List hooks, bool UseTLS, CharacterVector CertPath) {
 
   // to passed to R hooks
   List params = List::create();
@@ -75,7 +104,18 @@ List run(List target, CharacterVector hoststring, List hooks) {
   
   RGRPC_LOG("Bind");
 
-  int port = grpc_server_add_insecure_http2_port(server, hoststring[0]);
+  int port;
+
+  if(UseTLS) {
+    grpc_server_credentials* credentials = Get_TLS_Credentials(CertPath[0]);
+    port = grpc_server_add_secure_http2_port(server, hoststring[0], credentials);
+    grpc_server_credentials_release(credentials);
+  }
+  
+  else {
+    port = grpc_server_add_insecure_http2_port(server, hoststring[0]);
+  }
+  
   params["port"] = port;
   runFunctionIfProvided(hooks, "bind", params);
 
