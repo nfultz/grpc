@@ -8,6 +8,8 @@
 grpc_client <- function(impl, channel) {
 
   client_deadline <- getOption("client_deadline", default = 5)
+  UseTLS <- getOption("UseTLS", default = TRUE)
+  CertPath <- getOption("CertPath", default = NULL)
   
   client_functions <- lapply(impl, function(fn)
     {
