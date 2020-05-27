@@ -6,8 +6,8 @@
 using namespace Rcpp;
 
 // fetch
-RawVector fetch(CharacterVector server, CharacterVector method, RawVector requestArg, CharacterVector metadata, bool UseTLS, CharacterVector CertPath);
-RcppExport SEXP _grpc_fetch(SEXP serverSEXP, SEXP methodSEXP, SEXP requestArgSEXP, SEXP metadataSEXP, SEXP UseTLSSEXP, SEXP CertPathSEXP) {
+RawVector fetch(CharacterVector server, CharacterVector method, RawVector requestArg, CharacterVector metadata, int client_deadline, bool UseTLS, CharacterVector CertPath);
+RcppExport SEXP _grpc_fetch(SEXP serverSEXP, SEXP methodSEXP, SEXP requestArgSEXP, SEXP metadataSEXP, SEXP client_deadlineSEXP, SEXP UseTLSSEXP, SEXP CertPathSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -15,9 +15,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< CharacterVector >::type method(methodSEXP);
     Rcpp::traits::input_parameter< RawVector >::type requestArg(requestArgSEXP);
     Rcpp::traits::input_parameter< CharacterVector >::type metadata(metadataSEXP);
+    Rcpp::traits::input_parameter< int >::type client_deadline(client_deadlineSEXP);
     Rcpp::traits::input_parameter< bool >::type UseTLS(UseTLSSEXP);
     Rcpp::traits::input_parameter< CharacterVector >::type CertPath(CertPathSEXP);
-    rcpp_result_gen = Rcpp::wrap(fetch(server, method, requestArg, metadata, UseTLS, CertPath));
+    rcpp_result_gen = Rcpp::wrap(fetch(server, method, requestArg, metadata, client_deadline, UseTLS, CertPath));
     return rcpp_result_gen;
 END_RCPP
 }
