@@ -1,4 +1,4 @@
-name: Client-Server
+name: gRPC Workflow Test
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - master
 
 jobs:
-  R-CMD-check:
+  Simple Connection:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -17,4 +17,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get install libcurl4-openssl-dev libxml2-dev
-          R -e 'impl <- read_services(spec)'
+          R -e 'install.packages("remotes")'
+          R -e 'remotes::install_deps(dependencies = TRUE)'
+          R -e 'remotes::install_cran("covr")'
+          R -e 'covr::codecov()'
