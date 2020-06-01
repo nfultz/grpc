@@ -1,4 +1,4 @@
-name: gRPC Workflow Test
+name: gRPC Test
 
 on:
   push:
