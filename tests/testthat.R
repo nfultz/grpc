@@ -1,4 +1,4 @@
 library(testthat)
-library(CalculatorRcpp)
+library(grpc)
 
-test_check("CalculatorRcpp")
+test_check("grpc")
