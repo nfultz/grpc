@@ -20,7 +20,7 @@ jobs:
           R -e 'install.packages("remotes")'
           R -e 'install.packages("devtools")'
           brew install protobuf
-          R -e 'install_github("eddelbuettel/rprotobuf")'
+          R -e 'devtools::install_github("eddelbuettel/rprotobuf")'
           R -e 'remotes::install_deps(dependencies = TRUE)'
           R -e 'remotes::install_cran("covr")'
           R -e 'covr::codecov()'
