@@ -18,6 +18,7 @@ jobs:
         run: |
           sudo apt-get install libcurl4-openssl-dev libxml2-dev
           R -e 'install.packages("remotes")'
+          R -e 'install.packages("RProtoBuf")'
           R -e 'remotes::install_deps(dependencies = TRUE)'
           R -e 'remotes::install_cran("covr")'
           R -e 'covr::codecov()'
