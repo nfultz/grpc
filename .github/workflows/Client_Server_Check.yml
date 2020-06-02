@@ -8,8 +8,10 @@ on:
     branches:
       - master
 jobs:
-  Test Code Update:
+  Test-Code-Update:
+    
     runs-on: ubuntu-18.04
+    
     steps:
       
       - name: Get Source Code into Virtual Machine
