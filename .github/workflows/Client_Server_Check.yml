@@ -18,13 +18,13 @@ jobs:
             r-version: '3.6.1'
       
       - name: Install libcurl
-        run: sudo apt-get install libcurl4-openssl-dev
+        run: |
+          sudo apt-get install libcurl4-openssl-dev
+          sudo apt-get install libprotoc-dev
       
       - name: Query dependencies
         run: |
           Rscript -e "install.packages('remotes')" -e "saveRDS(remotes::dev_package_deps(dependencies = TRUE), 'depends.Rds')"
-          brew install protobuf
-          brew link --overwrite protobuf
           Rscript -e "saveRDS(remotes::install_deps(dependencies = TRUE), 'depends.Rds')"
           Rscript -e "saveRDS(remotes::install_cran("covr"), 'depends.Rds')"
       
