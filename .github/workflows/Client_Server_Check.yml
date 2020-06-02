@@ -7,20 +7,24 @@ on:
   pull_request:
     branches:
       - master
-
 jobs:
   R-CMD-check:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v1
+      
       - uses: r-lib/actions/setup-r@master
         with:
             r-version: '3.6.1'
+      
       - name: Install libcurl
         run: sudo apt-get install libcurl4-openssl-dev
-        
+      
+      - name: Query dependencies
+        run: Rscript -e "install.packages('remotes')" -e "saveRDS(remotes::dev_package_deps(dependencies = TRUE), 'depends.Rds')"
+      
       - name: Cache R packages
-        id: cache-primes
+        if: runner.os != 'Windows'
         uses: actions/cache@v1
         with:
           path: ${{ env.R_LIBS_USER }}
