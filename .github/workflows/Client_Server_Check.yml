@@ -42,12 +42,11 @@ jobs:
         id: cache-grpc_base
         with:
           path: "~/grpc_base"
-          key: ${{secrets.GRPC_BASE_VERSION}}
+          key: "grpc_base"
           
       - name: Install grpc_base
         env:
           CACHE_HIT: ${{steps.cache-grpc_base.outputs.cache-hit}}
-          VALGRIND_VERSION: ${{secrets.GRPC_BASE_VERSION}}
         run: |
           if [[ "$CACHE_HIT" == 'true' ]]; then
             sudo cp --verbose --force --recursive ~/grpc_base/* /
