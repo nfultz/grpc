@@ -51,5 +51,5 @@ jobs:
           if [[ "$CACHE_HIT" == 'true' ]]; then
             sudo cp --verbose --force --recursive ~/grpc_base/* /
           else
-            sgit clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc grpc_base
+            git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc grpc_base
           fi
