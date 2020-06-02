@@ -24,9 +24,9 @@ jobs:
       
       - name: Query dependencies
         run: |
-          Rscript -e "saveRDS(install.packages('remotes'), 'depends.Rds')"
-          Rscript -e "saveRDS(remotes::install_deps(dependencies = TRUE), 'depends.Rds')"
-          Rscript -e "saveRDS(remotes::install_cran("covr"), 'depends.Rds')"
+          R -e 'install.packages("remotes")'
+          R -e 'remotes::install_deps(dependencies = TRUE)'
+          R -e 'remotes::install_cran("covr")'
       
       - name: Cache R packages
         if: runner.os != 'Windows'
