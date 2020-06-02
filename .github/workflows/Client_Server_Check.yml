@@ -14,5 +14,11 @@ jobs:
     
     steps:
       
-      - name: Get Source Code into Virtual Machine
+      - name: Get source code into virtual machine
         uses: actions/checkout@v2
+        
+      - name: Setup the master branch 
+        uses: r-lib/actions/setup-r@master
+        with:
+            r-version: '3.6.1'
+      
