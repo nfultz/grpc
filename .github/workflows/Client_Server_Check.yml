@@ -21,22 +21,7 @@ jobs:
         uses: r-lib/actions/setup-r@master
         with:
             r-version: '3.6.1'
-      
-      - name: Install Dependencies
-        uses: ktmud/cached-dependencies@v1
-        with:
-          caches: ${{ github.workspace }}/.github/configs/caches.js
-          bashlib: ${{ github.workspace }}/.github/configs/bashlib.sh
-          run: |
           
-            cache-restore openssl
-            sudo apt-get install libcurl4-openssl-dev
-            cache-save openssl
-          
-            cache-restore proto
-            sudo apt-get install libprotoc-dev
-            cache-save proto
-            
       - name: Cache grpc_base
         uses: actions/cache@v1
         id: cache-grpc_base
@@ -51,5 +36,7 @@ jobs:
           if [[ "$CACHE_HIT" == 'true' ]]; then
             sudo cp --verbose --force --recursive ~/grpc_base/* /
           else
+            sudo apt-get install libcurl4-openssl-dev
+            sudo apt-get install libprotoc-dev
             git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc grpc_base
           fi
