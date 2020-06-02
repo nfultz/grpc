@@ -21,7 +21,9 @@ jobs:
         run: sudo apt-get install libcurl4-openssl-dev
       
       - name: Query dependencies
-        run: Rscript -e "install.packages('remotes')" -e "saveRDS(remotes::dev_package_deps(dependencies = TRUE), 'depends.Rds')"
+        run: |
+          Rscript -e "install.packages('remotes')" -e "saveRDS(remotes::dev_package_deps(dependencies = TRUE), 'depends.Rds')"
+          Rscript -e "saveRDS(remotes::install_cran("covr"), 'depends.Rds')"
       
       - name: Cache R packages
         if: runner.os != 'Windows'
