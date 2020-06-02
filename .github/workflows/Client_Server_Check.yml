@@ -36,8 +36,21 @@ jobs:
             cache-restore proto
             sudo apt-get install libprotoc-dev
             cache-save proto
-          
-            cache-restore grpc_base
-            git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc grpc_base
-            cache-save grpc_base
             
+      - name: Cache grpc_base
+        uses: actions/cache@v1
+        id: cache-grpc_base
+        with:
+          path: "~/grpc_base"
+          key: ${{secrets.GRPC_BASE_VERSION}}
+          
+      - name: Install grpc_base
+        env:
+          CACHE_HIT: ${{steps.cache-grpc_base.outputs.cache-hit}}
+          VALGRIND_VERSION: ${{secrets.GRPC_BASE_VERSION}}
+        run: |
+          if [[ "$CACHE_HIT" == 'true' ]]; then
+            sudo cp --verbose --force --recursive ~/grpc_base/* /
+          else
+            sgit clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc grpc_base
+          fi
