@@ -29,12 +29,9 @@ jobs:
           bashlib: ${{ github.workspace }}/.github/configs/bashlib.sh
           run: |
           
-            sudo apt-get install libcurl4-openssl-dev
-            cache-save openssl
+            cache-restore openssl
             
-            sudo apt-get install libprotoc-dev
-            cache-save proto
+            cache-restore proto
 
-            git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc grpc_base
-            cache-save grpc_base
+            cache-restore grpc_base
             
