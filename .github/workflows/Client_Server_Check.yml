@@ -30,8 +30,14 @@ jobs:
           run: |
           
             cache-restore openssl
-            
+            sudo apt-get install libcurl4-openssl-dev
+            cache-save openssl
+          
             cache-restore proto
-
+            sudo apt-get install libprotoc-dev
+            cache-save proto
+          
             cache-restore grpc_base
+            git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc grpc_base
+            cache-save grpc_base
             
