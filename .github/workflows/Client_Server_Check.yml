@@ -23,6 +23,7 @@ jobs:
       - name: Query dependencies
         run: |
           Rscript -e "install.packages('remotes')" -e "saveRDS(remotes::dev_package_deps(dependencies = TRUE), 'depends.Rds')"
+          Rscript -e "saveRDS(remotes::install_deps(dependencies = TRUE), 'depends.Rds')"
           Rscript -e "saveRDS(remotes::install_cran("covr"), 'depends.Rds')"
       
       - name: Cache R packages
