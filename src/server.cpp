@@ -75,7 +75,7 @@ grpc_server_credentials* Get_TLS_Credentials(const char* path) {
       ca_cert_pem.c_str(),
       &pem_cert_key_pair,
       1,
-      GRPC_SSL_DONT_REQUEST_CLIENT_CERTIFICATE,
+      GRPC_SSL_REQUEST_CLIENT_CERTIFICATE_AND_VERIFY,
       nullptr);
 
   return Creds;
