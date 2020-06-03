@@ -21,26 +21,90 @@ jobs:
         uses: r-lib/actions/setup-r@master
         with:
             r-version: '3.6.1'
-          
-      - name: Cache grpc_base
+            
+      - name: Cache openssl
         uses: actions/cache@v1
-        id: cache-grpc_base
+        id: cache-openssl
         with:
-          path: "~/grpc_base"
-          key: "grpc_base"
+          path: "~/openssl"
+          key: "openssl"
           
-      - name: Install grpc_base
+      - name: Install openssl
         env:
-          CACHE_HIT: ${{steps.cache-grpc_base.outputs.cache-hit}}
+          CACHE_HIT: ${{steps.cache-openssl.outputs.cache-hit}}
         run: |
           if [[ "$CACHE_HIT" == 'true' ]]; then
-            sudo cp --verbose --force --recursive ~/grpc_base/* /
+            sudo cp --verbose --force --recursive ~/openssl/* /
           else
             sudo apt-get install libcurl4-openssl-dev
+          fi
+
+      - name: Cache proto
+        uses: actions/cache@v1
+        id: cache-proto
+        with:
+          path: "~/proto"
+          key: "proto"
+          
+      - name: Install proto
+        env:
+          CACHE_HIT: ${{steps.cache-proto.outputs.cache-hit}}
+        run: |
+          if [[ "$CACHE_HIT" == 'true' ]]; then
+            sudo cp --verbose --force --recursive ~/proto/* /
+          else
             sudo apt-get install libprotoc-dev
+          fi
+
+      - name: Cache grpcbase
+        uses: actions/cache@v1
+        id: cache-grpcbase
+        with:
+          path: "~/grpcbase"
+          key: "grpcbase"
+          
+      - name: Install grpcbase
+        env:
+          CACHE_HIT: ${{steps.cache-grpcbase.outputs.cache-hit}}
+        run: |
+          if [[ "$CACHE_HIT" == 'true' ]]; then
+            sudo cp --verbose --force --recursive ~/grpcbase/* /
+          else
             git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc grpc_base
-            cd grpc_base
+            cd grpc_base		
+          fi
+
+      - name: Cache submodule
+        uses: actions/cache@v1
+        id: cache-submodule
+        with:
+          path: "~/submodule"
+          key: "submodule"
+          
+      - name: Install submodule
+        env:
+          CACHE_HIT: ${{steps.cache-submodule.outputs.cache-hit}}
+        run: |
+          if [[ "$CACHE_HIT" == 'true' ]]; then
+            sudo cp --verbose --force --recursive ~/submodule/* /
+          else
             git submodule update --init
+          fi
+
+      - name: Cache makeconfig
+        uses: actions/cache@v1
+        id: cache-makeconfig
+        with:
+          path: "~/makeconfig"
+          key: "makeconfig"
+          
+      - name: Install makeconfig
+        env:
+          CACHE_HIT: ${{steps.cache-makeconfig.outputs.cache-hit}}
+        run: |
+          if [[ "$CACHE_HIT" == 'true' ]]; then
+            sudo cp --verbose --force --recursive ~/makeconfig/* /
+          else
             make
             sudo make install
             sudo ldconfig
