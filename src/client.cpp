@@ -37,9 +37,14 @@ static std::string get_file_contents(const char *fpath)
 grpc_channel_credentials* Get_Client_Credentials(const char* path){
 
   std::string ca_cert_pem = get_file_contents(((std::string)path + "ca-cert.pem").c_str());
+  std::string client_key_pem = get_file_contents(((std::string)path + "client-key.pem").c_str());
+  std::string client_cert_pem = get_file_contents(((std::string)path + "client-cert.pem").c_str());
+
+  grpc_ssl_pem_key_cert_pair signed_client_key_cert_pair =
+    {client_key_pem.c_str(), client_cert_pem.c_str()};
 
   grpc_channel_credentials* Creds = grpc_ssl_credentials_create(
-    ca_cert_pem.c_str(), nullptr, nullptr, nullptr);
+    ca_cert_pem.c_str(), &signed_client_key_cert_pair, nullptr, nullptr);
 
   return Creds;
 }
