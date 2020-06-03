@@ -39,4 +39,9 @@ jobs:
             sudo apt-get install libcurl4-openssl-dev
             sudo apt-get install libprotoc-dev
             git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc grpc_base
+            cd grpc_base
+            git submodule update --init
+            make
+            sudo make install
+            sudo ldconfig
           fi
