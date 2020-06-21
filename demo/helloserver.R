@@ -12,6 +12,7 @@ impl <- read_services(spec)
 
 options(UseTLS = TRUE)
 options(CertPath = "/home/shehab/Dropbox/gRPC/Certificates/")
+options(AccessToken = "Bearer Token Shehab and Neal")
 
 impl$SayHello$f <- function(request){
   newResponse(message = paste('Hello,', request$name))
