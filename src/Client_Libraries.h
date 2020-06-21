@@ -14,4 +14,8 @@
 
 #define GPR_ARRAY_SIZE(array) (sizeof(array) / sizeof(*(array)))
 
+struct files {
+    std::string CAcert, clientKey, clientCert;
+};
+
 #endif
