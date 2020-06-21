@@ -6,8 +6,8 @@
 using namespace Rcpp;
 
 // fetch
-RawVector fetch(CharacterVector server, CharacterVector method, RawVector requestArg, CharacterVector metadata, int client_deadline, bool UseTLS, CharacterVector CertPath);
-RcppExport SEXP _grpc_fetch(SEXP serverSEXP, SEXP methodSEXP, SEXP requestArgSEXP, SEXP metadataSEXP, SEXP client_deadlineSEXP, SEXP UseTLSSEXP, SEXP CertPathSEXP) {
+RawVector fetch(CharacterVector server, CharacterVector method, RawVector requestArg, CharacterVector metadata, bool useTLS, CharacterVector CertPath, CharacterVector AccessToken, int ClientDeadline);
+RcppExport SEXP _grpc_fetch(SEXP serverSEXP, SEXP methodSEXP, SEXP requestArgSEXP, SEXP metadataSEXP, SEXP useTLSSEXP, SEXP CertPathSEXP, SEXP AccessTokenSEXP, SEXP ClientDeadlineSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -15,10 +15,11 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< CharacterVector >::type method(methodSEXP);
     Rcpp::traits::input_parameter< RawVector >::type requestArg(requestArgSEXP);
     Rcpp::traits::input_parameter< CharacterVector >::type metadata(metadataSEXP);
-    Rcpp::traits::input_parameter< int >::type client_deadline(client_deadlineSEXP);
-    Rcpp::traits::input_parameter< bool >::type UseTLS(UseTLSSEXP);
+    Rcpp::traits::input_parameter< bool >::type useTLS(useTLSSEXP);
     Rcpp::traits::input_parameter< CharacterVector >::type CertPath(CertPathSEXP);
-    rcpp_result_gen = Rcpp::wrap(fetch(server, method, requestArg, metadata, client_deadline, UseTLS, CertPath));
+    Rcpp::traits::input_parameter< CharacterVector >::type AccessToken(AccessTokenSEXP);
+    Rcpp::traits::input_parameter< int >::type ClientDeadline(ClientDeadlineSEXP);
+    rcpp_result_gen = Rcpp::wrap(fetch(server, method, requestArg, metadata, useTLS, CertPath, AccessToken, ClientDeadline));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -33,17 +34,18 @@ BEGIN_RCPP
 END_RCPP
 }
 // run
-List run(List target, CharacterVector hoststring, List hooks, bool UseTLS, CharacterVector CertPath);
-RcppExport SEXP _grpc_run(SEXP targetSEXP, SEXP hoststringSEXP, SEXP hooksSEXP, SEXP UseTLSSEXP, SEXP CertPathSEXP) {
+List run(List target, CharacterVector hoststring, List hooks, bool useTLS, CharacterVector CertPath, CharacterVector AccessToken);
+RcppExport SEXP _grpc_run(SEXP targetSEXP, SEXP hoststringSEXP, SEXP hooksSEXP, SEXP useTLSSEXP, SEXP CertPathSEXP, SEXP AccessTokenSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< List >::type target(targetSEXP);
     Rcpp::traits::input_parameter< CharacterVector >::type hoststring(hoststringSEXP);
     Rcpp::traits::input_parameter< List >::type hooks(hooksSEXP);
-    Rcpp::traits::input_parameter< bool >::type UseTLS(UseTLSSEXP);
+    Rcpp::traits::input_parameter< bool >::type useTLS(useTLSSEXP);
     Rcpp::traits::input_parameter< CharacterVector >::type CertPath(CertPathSEXP);
-    rcpp_result_gen = Rcpp::wrap(run(target, hoststring, hooks, UseTLS, CertPath));
+    Rcpp::traits::input_parameter< CharacterVector >::type AccessToken(AccessTokenSEXP);
+    rcpp_result_gen = Rcpp::wrap(run(target, hoststring, hooks, useTLS, CertPath, AccessToken));
     return rcpp_result_gen;
 END_RCPP
 }
