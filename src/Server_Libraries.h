@@ -15,4 +15,8 @@
 
 #define _INTERRUPT_CHECK_PERIOD_MS 1000
 
+struct Authentication_Token {
+  std::string Key, Value;
+};
+
 #endif
