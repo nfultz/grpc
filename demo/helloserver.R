@@ -10,6 +10,10 @@ spec <- system.file('examples/helloworld.proto', package = 'grpc')
 
 impl <- read_services(spec)
 
+options(UseTLS = TRUE)
+options(CertPath = "/home/shehab/Dropbox/gRPC/Certificates/")
+options(AccessToken = "Bearer Token Shehab and Neal")
+
 impl$SayHello$f <- function(request){
   newResponse(message = paste('Hello,', request$name))
 }
@@ -24,4 +28,3 @@ impl$SayBye$f <- function(request){
 
 ## actually running the service handlers
 start_server(impl, "0.0.0.0:50051")
-
