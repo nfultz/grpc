@@ -94,6 +94,9 @@ grpc_channel* createChannel(bool useTLS, const char* server ,const char* path,
 RawVector fetch(CharacterVector server, CharacterVector method, RawVector requestArg, CharacterVector metadata, 
                 bool useTLS, CharacterVector certPath, CharacterVector tokenValue, int clientDeadline) {
 
+  //RGRPC_LOG("RawVector Here = " << method);
+  //method = "/helloworld.Greeter/SayThanks";
+
   bool isMetadataAttached = 
     (metadata.length() > 0) ? true : false;
 
@@ -120,7 +123,7 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
                       channel, NULL, GRPC_PROPAGATE_DEFAULTS, 
                       cq, method_slice, sp, deadline, NULL);
 
-  RGRPC_LOG("Making ops");
+  RGRPC_LOG("Making ops here");
   grpc_op ops[6];
   grpc_op* op;
 
@@ -150,14 +153,12 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
   grpc_metadata_array_init(&request_metadata_recv);
   grpc_call_details_init(&call_details);
 
-
   SEXP raw_ = requestArg;
   int len = requestArg.length();
   grpc_slice request_payload_slice = grpc_slice_from_copied_buffer((char*) RAW(raw_), len);
 
   grpc_byte_buffer *request_payload =
     grpc_raw_byte_buffer_create(&request_payload_slice, 1);
-
 
   memset(ops, 0, sizeof(ops));
   
@@ -218,11 +219,17 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
   RGRPC_LOG("Starting batch...");
 
   error = grpc_call_start_batch(c, ops, (size_t)(op - ops), tag(1), NULL);
+
   if (error != GRPC_CALL_OK) { // 0
     stop("gRPC c++ call start failed");
   }
 
+  RGRPC_LOG("Set Event...");
+  RGRPC_LOG("Eveeeeent Typeeeeee = " << event.type);
   event = grpc_completion_queue_next(cq, deadline, nullptr); //actually does the work
+  RGRPC_LOG("Eveeeeent Typeeeeee = " << event.type);
+  RGRPC_LOG("Did it reach here?");
+
   if (event.type == GRPC_QUEUE_TIMEOUT) { // 1
     stop("gRPC c++ call timeout");
   }
@@ -238,7 +245,6 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
   if (!response_payload_recv) {
     stop("No response from the gRPC server");
   }
-
 
   // Call Header, followed by optional Initial-Metadata, followed by zero or more Payload Messages
   RGRPC_LOG("Read response Slice");
@@ -256,6 +262,62 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
   grpc_slice response_payload_slice = grpc_byte_buffer_reader_readall(&bbr);
   RawVector response_payload_raw = sliceToRaw2(response_payload_slice);
 
+  RGRPC_LOG("response_payload_raw = " << response_payload_raw);
+  
+  //Streaming Starts Here
+
+  grpc_op ops_1[6];
+
+  memset(ops, 0, sizeof(ops_1));
+  
+  // 4
+  op->op = GRPC_OP_RECV_INITIAL_METADATA;
+  op->data.recv_initial_metadata.recv_initial_metadata = &initial_metadata_recv;
+  op->flags = 0;
+  op->reserved = NULL;
+  op++;
+
+  // 5
+  op->op = GRPC_OP_RECV_MESSAGE;
+  op->data.recv_message.recv_message = &response_payload_recv;
+  op->flags = 0;
+  op->reserved = NULL;
+  op++;
+
+  // 6
+  op->op = GRPC_OP_RECV_STATUS_ON_CLIENT;
+  op->data.recv_status_on_client.trailing_metadata = &trailing_metadata_recv;
+  op->data.recv_status_on_client.status = &status;
+  op->data.recv_status_on_client.status_details = &details;
+  op->flags = 0;
+  op->reserved = NULL;
+  op++;
+
+  error = grpc_call_start_batch(c, ops_1, (size_t)(op - ops_1), tag(1), NULL);
+  grpc_event event_1;
+
+  RGRPC_LOG("Event Type = " << event_1.type);
+  event_1 = grpc_completion_queue_next(cq, deadline, nullptr); //actually does the work
+  RGRPC_LOG("Event Type = " << event_1.type);
+
+  RGRPC_LOG("Read response Slice");
+  grpc_byte_buffer_reader bbr_1;
+
+  try {
+    grpc_byte_buffer_reader_init(&bbr_1, response_payload_recv);
+  }
+
+  catch (std::exception& e) {
+    Rcout << "Segfault" << e.what() << std::endl;
+    stop("Segfault in C++");
+  }
+
+  response_payload_slice = grpc_byte_buffer_reader_readall(&bbr_1);
+  response_payload_raw = sliceToRaw2(response_payload_slice);
+
+  RGRPC_LOG("response_payload_raw = " << response_payload_raw);
+
+  //Streaming Ends Here
 
   RGRPC_LOG("Cleanup");
 
@@ -273,6 +335,7 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
 
   grpc_byte_buffer_destroy(request_payload);
   grpc_byte_buffer_destroy(response_payload_recv);
-
+ 
   return response_payload_raw;
+  //return 0;
 }
