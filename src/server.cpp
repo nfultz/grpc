@@ -1,8 +1,14 @@
 #include <iostream>
 #include <fstream>
 #include "Server_Libraries.h"
+#include <ctime>
 
 using namespace Rcpp;
+
+grpc_call** Call_Global;
+grpc_completion_queue** Queue_Global;
+gpr_timespec* Timespec_Global;
+grpc_event* Event_Global;
 
 CharacterVector sliceToChar(grpc_slice slice) {
 
@@ -75,14 +81,11 @@ grpc_server_credentials* Get_TLS_Credentials(const char* path) {
   return Creds;
 }
 
-bool validateOauth2(grpc_metadata_array metadataArray, const char* token) {
+bool validateOauth2(grpc_metadata_array metadataArray, Function checkAuthCallback) {
 
   Authentication_Token Oauth2;
 
   int Index = metadataArray.count - 2;
-
-  std::string TokenValue = (std::string)token;
-  std::string TokenKey = "authorization";
 
   if (metadataArray.count > 1) {
 
@@ -92,10 +95,10 @@ bool validateOauth2(grpc_metadata_array metadataArray, const char* token) {
     Oauth2.Key = 
       (std::string)grpc_slice_to_c_string(metadataArray.metadata[Index].key);
 
-    if(Oauth2.Key.compare(TokenKey) != 0 ||
-       Oauth2.Value.compare(TokenValue) != 0) {
+    bool Check = Rcpp::as<bool>(checkAuthCallback(Oauth2.Value));
+
+    if(!Check)
       return false;
-    }
   }
 
   return true;
@@ -120,7 +123,10 @@ int createPort(bool useTLS, grpc_server* server, const char* hoststring, const c
 
 // [[Rcpp::export]]
 List run(List target, CharacterVector hoststring, List hooks, bool useTLS, CharacterVector CertPath, 
-         CharacterVector AccessToken) {
+         Function checkAuthCallback, List stream_bool) {
+
+  //Time Here
+  std::clock_t a = std::clock();
 
   List params = List::create();
 
@@ -158,8 +164,6 @@ List run(List target, CharacterVector hoststring, List hooks, bool useTLS, Chara
 
   grpc_byte_buffer *request_payload_recv;
   grpc_byte_buffer *response_payload;
-  grpc_byte_buffer *response_authentication;
-
 
   grpc_call_details_init(&details);
   grpc_metadata_array_init(&request_meta);
@@ -167,7 +171,6 @@ List run(List target, CharacterVector hoststring, List hooks, bool useTLS, Chara
 
   RGRPC_LOG("[RUNNING]");
 
-  // Copy pasted from node module...
   grpc_event event;
 
   do {
@@ -175,23 +178,34 @@ List run(List target, CharacterVector hoststring, List hooks, bool useTLS, Chara
     memset(ops, 0, sizeof(ops));
 
     grpc_server_request_call(server, &call,
-                             &details, &request_meta, queue, queue, NULL);
+                           &details, &request_meta, queue, queue, NULL);
 
-    gpr_timespec c_increment = gpr_time_from_millis(_INTERRUPT_CHECK_PERIOD_MS, GPR_TIMESPAN);
-    gpr_timespec c_timeout = gpr_time_add(gpr_now(GPR_CLOCK_REALTIME), c_increment);
+    Call_Global = &call;
+
+    gpr_timespec c_increment = 
+        gpr_time_from_millis(_INTERRUPT_CHECK_PERIOD_MS, GPR_TIMESPAN);
+
+    gpr_timespec c_timeout = 
+        gpr_time_add(gpr_now(GPR_CLOCK_REALTIME), c_increment);
 
     event = grpc_completion_queue_next(queue, c_timeout, RESERVED);
 
     RGRPC_LOG("Event type: " << event.type);
-    CharacterVector method =     sliceToChar(details.method);
+    CharacterVector method = sliceToChar(details.method);
 
     RGRPC_LOG("Event method: " << method);
     params["event_method"] = method;
+
+    //Time Here
+    std::clock_t b = std::clock();
+    RGRPC_LOG("Time Now = " << (b - a));
 
     if (event.type == GRPC_OP_COMPLETE) {
       
       const char *error_message;
       
+      Event_Global = &event;
+
       if (event.success) {
         error_message = NULL;
       } 
@@ -202,31 +216,33 @@ List run(List target, CharacterVector hoststring, List hooks, bool useTLS, Chara
         continue;
       }
 
-      RGRPC_LOG("Processing event method: " << method );
+      RGRPC_LOG("Processing event method: " << method);
       runFunctionIfProvided(hooks, "event_received", params);
 
       memset(ops, 0, sizeof(ops));
       op = ops;
 
       RGRPC_LOG("GRPC_OP_SEND_INITIAL_METADATA");
-      op = ops;
-      op->op = GRPC_OP_SEND_INITIAL_METADATA;
-      op->data.send_initial_metadata.count = 0;
-      op->data.send_initial_metadata.maybe_compression_level.is_set = false;
-      op->flags = 0;
-      op->reserved = NULL;
+      op -> op = GRPC_OP_SEND_INITIAL_METADATA;
+      op -> data.send_initial_metadata.count = 0;
+      op -> data.send_initial_metadata.maybe_compression_level.is_set = false;
+      op -> flags = 0;
+      op -> reserved = NULL;
       op++;
 
       RGRPC_LOG("GRPC_OP_RECV_MESSAGE");
-      op->op = GRPC_OP_RECV_MESSAGE;
-      op->data.recv_message.recv_message = &request_payload_recv;
-      op->flags = 0;
-      op->reserved = NULL;
+      op -> op = GRPC_OP_RECV_MESSAGE;
+      op -> data.recv_message.recv_message = &request_payload_recv;
+      op -> flags = 0;
+      op -> reserved = NULL;
       op++;
 
-      error = grpc_call_start_batch(call, ops, (size_t)(op - ops), NULL, NULL);
+      grpc_call_start_batch(call, ops, (size_t)(op - ops), NULL, NULL);
 
       grpc_completion_queue_next(queue, c_timeout, RESERVED); //actually does the work
+
+      Queue_Global = &queue;
+      Timespec_Global = &c_timeout;
 
       grpc_byte_buffer_reader bbr;
       grpc_byte_buffer_reader_init(&bbr, request_payload_recv);
@@ -249,8 +265,8 @@ List run(List target, CharacterVector hoststring, List hooks, bool useTLS, Chara
         Function callback = as<Rcpp::Function>(target[as<std::string>(method[0])]);
 
         try {
-
           RawVector response_payload_raw = callback(request_payload_raw);
+          RGRPC_LOG("response_payload_raw = " << response_payload_raw);
           runFunctionIfProvided(hooks, "event_processed", params);
           RGRPC_LOG("callback() success");
 
@@ -276,52 +292,59 @@ List run(List target, CharacterVector hoststring, List hooks, bool useTLS, Chara
         RGRPC_LOG("Method not found: " << method[0]);
         status_code = GRPC_STATUS_UNIMPLEMENTED;
         status_details_string = "Method not implemented";
-
       }
 
-      if(!validateOauth2(request_meta, AccessToken[0])) {
+      if(!validateOauth2(request_meta, checkAuthCallback)) {
         status_code = GRPC_STATUS_UNAUTHENTICATED;
       }
 
       memset(ops, 0, sizeof(ops));
 
       op = ops;
-      op->op = GRPC_OP_RECV_CLOSE_ON_SERVER;
-      op->data.recv_close_on_server.cancelled = &was_cancelled;
-      op->flags = 0;
-      op->reserved = NULL;
+      op -> op = GRPC_OP_RECV_CLOSE_ON_SERVER;
+      op -> data.recv_close_on_server.cancelled = &was_cancelled;
+      op -> flags = 0;
+      op -> reserved = NULL;
       op++;
 
       if (status_code == GRPC_STATUS_OK) {
 
         RGRPC_LOG("GRPC_OP_SEND_MESSAGE");
-
-        op->op = GRPC_OP_SEND_MESSAGE;
-        op->data.send_message.send_message = response_payload;
-        op->flags = 0;
-        op->reserved = NULL;
+        op -> op = GRPC_OP_SEND_MESSAGE;
+        op -> data.send_message.send_message = response_payload;
+        op -> flags = 0;
+        op -> reserved = NULL;
         op++;
       }
-      
-      RGRPC_LOG("GRPC_OP_SEND_STATUS_FROM_SERVER");
-      op->op = GRPC_OP_SEND_STATUS_FROM_SERVER;
-      op->data.send_status_from_server.trailing_metadata_count = 0;
 
-      op->data.send_status_from_server.status = status_code;
+      RGRPC_LOG("GRPC_OP_SEND_STATUS_FROM_SERVER 1");
+      op -> op = GRPC_OP_SEND_STATUS_FROM_SERVER;
+      op -> data.send_status_from_server.trailing_metadata_count = 0;
+
+      op -> data.send_status_from_server.status = status_code;
       grpc_slice status_details = grpc_slice_from_static_string(status_details_string);
 
-      op->data.send_status_from_server.status_details = &status_details;
-      op->flags = 0;
-      op->reserved = NULL;
+      op -> data.send_status_from_server.status_details = &status_details;
+      op -> flags = 0;
+      op -> reserved = NULL;
       op++;
 
-      RGRPC_LOG("Batch");
-      error = grpc_call_start_batch(call, ops, (size_t)(op - ops), NULL, NULL);
-      RGRPC_LOG("Hangup next");
-      grpc_completion_queue_next(queue, c_timeout, RESERVED); //actually does the work
-
+      RGRPC_LOG("Starts the process");
+      //grpc_call_start_batch(call, ops, (size_t)(op - ops), NULL, NULL);
+      
+      RGRPC_LOG("Bring on the next message from the client");
+      grpc_completion_queue_next(queue, c_timeout, RESERVED);
+      
+      //Add this function to the newely implemented function
       grpc_byte_buffer_destroy(response_payload);
-
+      RGRPC_LOG("---------------------------------------------------");
+      if(stream_bool[1]) {     
+	      RGRPC_LOG("List Element is True");
+	    }
+      else {  
+	      RGRPC_LOG("List Element is False");
+	    }
+      RGRPC_LOG("---------------------------------------------------");
     }
 
     try {
@@ -344,6 +367,71 @@ List run(List target, CharacterVector hoststring, List hooks, bool useTLS, Chara
   grpc_server_destroy(server);
   RGRPC_LOG("[STOPPED]");
   runFunctionIfProvided(hooks, "stopped", params);
+
+  return List::create();
+}
+
+
+// [[Rcpp::export]]
+List streamMessage(RawVector response) {
+
+  //Client Mutex starts here
+  RGRPC_LOG("((((((((((((event type)))))))))))) = " << (*Event_Global).type);
+
+  while((*Event_Global).type != GRPC_OP_COMPLETE){
+    *Event_Global = grpc_completion_queue_next(*Queue_Global, *Timespec_Global, RESERVED);
+  }
+  //Client Mutex ends here
+
+  RGRPC_LOG("*************Streaming Function Here********************");
+  RGRPC_LOG("response_payload_raw = " << response);
+
+  grpc_status_code status_code = GRPC_STATUS_OK;
+  char const * status_details_string = "OK";
+
+  int len = response.length();
+  SEXP raw_ = response;
+  grpc_slice response_payload_slice = grpc_slice_from_copied_buffer((char*) RAW(raw_), len);
+  grpc_byte_buffer* response_payload = grpc_raw_byte_buffer_create(&response_payload_slice, 1);
+  grpc_slice_unref(response_payload_slice);
+
+  grpc_op ops[6];
+  grpc_op *op;
+  int was_cancelled = 2;
+
+  memset(ops, 0, sizeof(ops));
+
+  op = ops;
+  op -> op = GRPC_OP_RECV_CLOSE_ON_SERVER;
+  op -> data.recv_close_on_server.cancelled = &was_cancelled;
+  op -> flags = 0;
+  op -> reserved = NULL;
+  op++;
+
+  RGRPC_LOG("GRPC_OP_SEND_MESSAGE");
+  op -> op = GRPC_OP_SEND_MESSAGE;
+  op -> data.send_message.send_message = response_payload;
+  op -> flags = 0;
+  op -> reserved = NULL;
+  op++;
+
+  RGRPC_LOG("GRPC_OP_SEND_STATUS_FROM_SERVER 1");
+  op -> op = GRPC_OP_SEND_STATUS_FROM_SERVER;
+  op -> data.send_status_from_server.trailing_metadata_count = 0;
+
+  op -> data.send_status_from_server.status = status_code;
+  grpc_slice status_details = grpc_slice_from_static_string(status_details_string);
+
+  op -> data.send_status_from_server.status_details = &status_details;
+  op -> flags = 0;
+  op -> reserved = NULL;
+  op++;
+
+  RGRPC_LOG("Starts the process of Streaming!");
+  grpc_call_start_batch(*Call_Global, ops, (size_t)(op - ops), NULL, NULL);
+  *Event_Global = grpc_completion_queue_next(*Queue_Global, *Timespec_Global, RESERVED);
+
+  grpc_byte_buffer_destroy(response_payload);
 
   return List::create();
 }
