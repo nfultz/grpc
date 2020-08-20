@@ -12,21 +12,40 @@ grpc_client <- function(impl, channel)
   AccessToken <- getOption("AccessToken", default = NULL)
   ClientDeadline <- getOption("ClientDeadline", default = 5)
 
-  # lapply function is applied for operations on list objects and 
-  # returns a list object of same length of original set.
   client_functions <- lapply(impl, 
-    function(fn)
-    {
-        RequestDescriptor   <- P(fn[["RequestType"]]$proto)
-        ResponseDescriptor  <- P(fn[["ResponseType"]]$proto)
+  function(fn)
+  {
+	  RequestDescriptor   <- P(fn[["RequestType"]]$proto)
+	  ResponseDescriptor  <- P(fn[["ResponseType"]]$proto)
+	  stream_bool <- fn[["ResponseType"]]$stream
+	  message <- list(
+		  call = function(x, metadata=character(0)) 
+		  {
+			  if(stream_bool) {
+				  i <- 1
+				  List_messages <- list()
+				  while(1) {
+					  message <- read(
+						  ResponseDescriptor, 
+						  fetch(channel, fn$name, serialize(x, NULL), metadata, UseTLS, CertPath, AccessToken, ClientDeadline)
+						  )
+						  
+					  if(as.list(message) == '')
+						break;
+						
+					  List_messages[[i]] <- message
+					  i <- i + 1
+					  }
+				}
 
-        list(
-            call = function(x, metadata=character(0)) 
-            {   
-                read(
-                    ResponseDescriptor, 
-                    fetch(channel, fn$name, serialize(x, NULL), metadata, UseTLS, CertPath, AccessToken, ClientDeadline)
-                    )
+			  else {
+				List_messages <- read(
+					ResponseDescriptor, 
+					fetch(channel, fn$name, serialize(x, NULL), metadata, UseTLS, CertPath, AccessToken, ClientDeadline)
+					)
+				}
+				
+				List_messages
             },
             
             build = function(...) 
@@ -34,7 +53,9 @@ grpc_client <- function(impl, channel)
               new(RequestDescriptor, ...)
             }
         )
-    }
+		
+		message
+	}
   )
   
   client_functions
