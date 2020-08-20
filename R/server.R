@@ -19,7 +19,8 @@ start_server <- function(impl, channel, hooks = grpc_default_hooks()) {
     on.exit(hooks$exit())
   }
 
-  server_functions <- lapply(impl, function(fn){
+  serialFun <- function(fn) {
+
     descriptor <- P(fn[["RequestType"]]$proto)
 
     f <- structure(fn$f,
@@ -27,14 +28,25 @@ start_server <- function(impl, channel, hooks = grpc_default_hooks()) {
                    ResponseType = fn[["ResponseType"]])
 
     function(x) serialize(f(read(descriptor, x)), NULL)
-  })
+  }
+
+  streamFun <- function(fn) {
+    descriptor <- fn[["ResponseType"]]$stream
+  }
+
+  stream_bool <- lapply(impl, streamFun)
+  server_functions <- lapply(impl, serialFun)
+
+  checkAuthCallback <- function(token) {
+    token == AccessToken
+  }
 
   names(server_functions) <- vapply(impl, function(x)x$name, NA_character_)
+  names(stream_bool) <- vapply(impl, function(x)x$name, NA_character_)
 
-  run(server_functions, channel, hooks, UseTLS, CertPath, AccessToken)
+  run(server_functions, channel, hooks, UseTLS, CertPath, checkAuthCallback, stream_bool)
   invisible(NULL)
 }
-
 
 #' Construct a new ProtoBuf of ResponseType
 #'
@@ -44,6 +56,11 @@ start_server <- function(impl, channel, hooks = grpc_default_hooks()) {
 #'
 #' @export
 #' @importFrom RProtoBuf P new
-newResponse <- function(..., WFUN=sys.function(-1)){
-  new(P(attr(WFUN, "ResponseType")$proto), ...)
+newResponse <- function(..., WFUN=sys.function(-1)) {
+
+  response <- new(P(attr(WFUN, "ResponseType")$proto), ...)
+
+  # Serialize the response
+  serializedResponse = serialize(response, NULL)
+  streamMessage(serializedResponse)
 }
