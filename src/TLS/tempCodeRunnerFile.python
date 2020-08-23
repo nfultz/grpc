@@ -1,0 +1,170 @@
+#!/usr/bin/python2.4
+#
+# Copyright 2010 Google Inc.
+#
+# This code is licensed under the same terms as WebM:
+#  Software License Agreement:  http://www.webmproject.org/license/software/
+#  Additional IP Rights Grant:  http://www.webmproject.org/license/additional/
+# -----------------------------------------------------------------------------
+
+"""Print SSIM vs Bits per pixel data for webp and jpeg.
+
+To run this script you need to provide correct paths for cjpeg, djpeg, cwebp
+dwebp, identify, convert and ssim binaries. Replace the corresponding variables
+below and then run the following command.
+
+$ ./plot-ssim.py /path/to/your/images/*.png
+
+It will generate "jpg_ssim.dat" and "webp_ssim.dat" files containing
+{bpp, SSIM} plot data points for JPEG and WebP respectively
+
+- cjpeg and djpeg are available in libjpeg library (http://www.ijg.org/)
+- cwebp and dwebp are available in libwebp library
+  (http://code.google.com/speed/webp/)
+- identify and convert tools are available in ImageMagick
+  (http://www.imagemagick.org/)
+- SSIM implementation is available at http://mehdi.rabah.free.fr/SSIM/.
+  SSIM program should output a single float value for this script to be able
+  to parse.
+"""
+
+import os
+import sys
+import time
+
+# path of conversion tools
+cjpeg = "/path/to/cjpeg -optimize"
+djpeg = "/path/to/djpeg"
+cwebp = "/path/to/cwebp"
+dwebp = "/path/to/dwebp"
+convert = "/path/to/convert"
+identify = "/path/to/identify"
+ssim_prog = "/path/to/ssim"
+
+tmpdir = "/tmp/"
+jpg_outfile = "jpg_ssim.dat"
+webp_outfile = "webp_ssim.dat"
+
+
+def AddToPlot(plot_data, key, ssim, bpp):
+  if key in plot_data:
+    plot_data[key][0] += ssim
+    plot_data[key][1] += bpp
+  else:
+    plot_data[key] = [ssim, bpp]
+
+
+def AvgAndStorePlot(plot_data, num_images, outfile):
+  """Averages and stores plot data in the outfile."""
+  plot = {}
+  # First average ssim and bpp
+  for k in plot_data:
+    ssim = plot_data[k][0] / num_images
+    bpp = plot_data[k][1] / num_images
+    if bpp in plot:
+      plot[bpp][0] += ssim
+      plot[bpp][1] += 1
+    else:
+      plot[bpp] = [ssim, 1]
+
+  # Next average ssim for each bpp
+  for bpp in plot:
+    plot[bpp][0] /= plot[bpp][1]
+
+  # Store the plot data points
+  fout = open(outfile, "w")
+  keylist = plot.keys()
+  keylist.sort()
+  for k in keylist:
+    fout.write("%f %f\n" % (k, plot[k][0]))
+  fout.close()
+
+
+def main():
+
+  argv = #return path
+
+  start_time = time.time()
+
+  jpg_plot = {}
+  webp_plot = {}
+
+  for png in argv:
+    if not os.path.exists(png) or not png.endswith(".png"):
+      return
+    # Define various temporary files
+    filename = os.path.splitext(os.path.basename(png))[0]
+    basename = tmpdir + filename
+    ppm_file = basename + ".ppm"
+    jpg_file = basename + ".jpg"
+    jpg_ppm = basename + "_jpg.ppm"
+    jpg_png = basename + "_jpg.png"
+    webp_file = basename + ".webp"
+    webp_png = basename + "_webp.png"
+
+    # compute number of pixels in the image
+    cmd = "%s -format %%[fx:w] %s" % (identify, png)
+    proc = os.popen(cmd, "r")
+    width = int(proc.readline())
+
+    cmd = "%s -format %%[fx:h] %s" % (identify, png)
+    proc = os.popen(cmd, "r")
+    height = int(proc.readline())
+
+    num_pixels = 3 * width * height
+
+    # original png => ppm
+    cmd = "%s %s %s" % (convert, png, ppm_file)
+    os.system(cmd)
+
+    q = 1
+    while q <= 100:
+      # ppm => jpg
+      cmd = "%s -quality %d -outfile %s %s" % (cjpeg, q, jpg_file, ppm_file)
+      os.system(cmd)
+      # jpg => ppm
+      cmd = "%s -outfile %s %s" % (djpeg, jpg_ppm, jpg_file)
+      os.system(cmd)
+      # ppm => png
+      cmd = "%s %s %s" % (convert, jpg_ppm, jpg_png)
+      os.system(cmd)
+
+      # jpeg ssim
+      cmd = "%s %s %s" % (ssim_prog, png, jpg_png)
+      proc = os.popen(cmd, "r")
+      jpg_ssim = float(proc.readline())
+      AddToPlot(jpg_plot, q, jpg_ssim,
+                8.0 * os.path.getsize(jpg_file) / num_pixels)
+
+      # original png -> webp
+      cmd = "%s -quiet -q %d %s -o %s" % (cwebp, q, png, webp_file)
+      os.system(cmd)
+      # webp => png
+      cmd = "%s %s -o %s" % (dwebp, webp_file, webp_png)
+      os.system(cmd)
+
+      cmd = "%s %s %s" % (ssim_prog, png, webp_png)
+      proc = os.popen(cmd, "r")
+      webp_ssim = float(proc.readline())
+
+      AddToPlot(webp_plot, q, webp_ssim,
+                8.0 * os.path.getsize(webp_file) / num_pixels)
+
+      q += 1
+
+    # delete the tmp files
+    os.remove(ppm_file)
+    os.remove(jpg_file)
+    os.remove(jpg_png)
+    os.remove(jpg_ppm)
+    os.remove(webp_file)
+    os.remove(webp_png)
+
+  num_images = len(argv)
+  AvgAndStorePlot(jpg_plot, num_images, jpg_outfile)
+  AvgAndStorePlot(webp_plot, num_images, webp_outfile)
+
+  print "Run time %d sec" % (time.time() - start_time)
+
+if __name__ == "__main__":
+  main()
