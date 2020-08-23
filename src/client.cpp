@@ -1,8 +1,23 @@
 #include <iostream>
 #include <fstream>
-#include "Client_Libraries.h"
+#include <Rcpp.h>
+#include <grpc/grpc.h>
+#include <grpc/impl/codegen/byte_buffer_reader.h>
+#include <grpc/impl/codegen/log.h>
+#include <grpc/slice.h>
+#include <grpc/grpc_security.h>
+#include <grpc/support/alloc.h>
+#include <grpc/support/string_util.h>
+
+#include "common.h"
+
+#define GPR_ARRAY_SIZE(array) (sizeof(array) / sizeof(*(array)))
 
 using namespace Rcpp;
+
+struct files {
+    std::string CAcert, clientKey, clientCert;
+};
 
 static void* tag(intptr_t i) {
   return (void*)i;
@@ -99,7 +114,7 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
 
   bool isMetadataAttached = 
     (metadata.length() > 0) ? true : false;
-
+    
   grpc_channel* channel = 
     createChannel(useTLS, server[0], certPath[0], tokenValue[0], isMetadataAttached);
 
@@ -136,7 +151,6 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
                  0,
                  {{nullptr, nullptr, nullptr, nullptr}}};
   }
-
 
   grpc_metadata_array initial_metadata_recv;
   grpc_metadata_array trailing_metadata_recv;
@@ -263,60 +277,95 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
   RawVector response_payload_raw = sliceToRaw2(response_payload_slice);
 
   RGRPC_LOG("response_payload_raw = " << response_payload_raw);
-  
+   
   //Streaming Starts Here
+  /*
+  for(int i = 0; i < 8; i++)
+  {
+	  RGRPC_LOG("Ana hena fel for loop");
+	  grpc_op ops_1[6];
 
-  grpc_op ops_1[6];
+	  memset(ops, 0, sizeof(ops_1));
+	  
+	  // 1
+	  op = ops;
+	  op->op = GRPC_OP_SEND_INITIAL_METADATA;
+	  op->data.send_initial_metadata.count = metadata_length;
+	  
+	  if (metadata_length > 0) {
+	    op->data.send_initial_metadata.metadata = meta_c;
+	    RGRPC_LOG("Initial Metadata = " << meta_c)
+	  }
 
-  memset(ops, 0, sizeof(ops_1));
-  
-  // 4
-  op->op = GRPC_OP_RECV_INITIAL_METADATA;
-  op->data.recv_initial_metadata.recv_initial_metadata = &initial_metadata_recv;
-  op->flags = 0;
-  op->reserved = NULL;
-  op++;
+	  else {
+	    op->data.send_initial_metadata.maybe_compression_level.is_set = false;
+	  }
 
-  // 5
-  op->op = GRPC_OP_RECV_MESSAGE;
-  op->data.recv_message.recv_message = &response_payload_recv;
-  op->flags = 0;
-  op->reserved = NULL;
-  op++;
+	  op->flags = 0;
+	  op->reserved = NULL;
+	  op++;
 
-  // 6
-  op->op = GRPC_OP_RECV_STATUS_ON_CLIENT;
-  op->data.recv_status_on_client.trailing_metadata = &trailing_metadata_recv;
-  op->data.recv_status_on_client.status = &status;
-  op->data.recv_status_on_client.status_details = &details;
-  op->flags = 0;
-  op->reserved = NULL;
-  op++;
+	  // 2
+	  op->op = GRPC_OP_SEND_MESSAGE;
+	  op->data.send_message.send_message = request_payload;
+	  op->flags = 0;
+	  op->reserved = NULL;
+	  op++;
 
-  error = grpc_call_start_batch(c, ops_1, (size_t)(op - ops_1), tag(1), NULL);
-  grpc_event event_1;
+	  // 3
+	  op->op = GRPC_OP_SEND_CLOSE_FROM_CLIENT;
+	  op->flags = 0;
+	  op->reserved = NULL;
+	  op++;
 
-  RGRPC_LOG("Event Type = " << event_1.type);
-  event_1 = grpc_completion_queue_next(cq, deadline, nullptr); //actually does the work
-  RGRPC_LOG("Event Type = " << event_1.type);
+	  // 4
+	  op->op = GRPC_OP_RECV_INITIAL_METADATA;
+	  op->data.recv_initial_metadata.recv_initial_metadata = &initial_metadata_recv;
+	  op->flags = 0;
+	  op->reserved = NULL;
+	  op++;
 
-  RGRPC_LOG("Read response Slice");
-  grpc_byte_buffer_reader bbr_1;
+	  // 5
+	  op->op = GRPC_OP_RECV_MESSAGE;
+	  op->data.recv_message.recv_message = &response_payload_recv;
+	  op->flags = 0;
+	  op->reserved = NULL;
+	  op++;
 
-  try {
-    grpc_byte_buffer_reader_init(&bbr_1, response_payload_recv);
+	  // 6
+	  op->op = GRPC_OP_RECV_STATUS_ON_CLIENT;
+	  op->data.recv_status_on_client.trailing_metadata = &trailing_metadata_recv;
+	  op->data.recv_status_on_client.status = &status;
+	  op->data.recv_status_on_client.status_details = &details;
+	  op->flags = 0;
+	  op->reserved = NULL;
+	  op++;
+
+	  error = grpc_call_start_batch(c, ops_1, (size_t)(op - ops_1), tag(1), NULL);
+	  grpc_event event_1;
+
+	  RGRPC_LOG("Event_1 Type = " << event_1.type);
+	  event_1 = grpc_completion_queue_next(cq, deadline, nullptr); //actually does the work
+	  RGRPC_LOG("Event_1 Type = " << event_1.type);
+
+	  RGRPC_LOG("Read response Slice");
+	  grpc_byte_buffer_reader bbr_1;
+
+	  try {
+	    grpc_byte_buffer_reader_init(&bbr_1, response_payload_recv);
+	  }
+
+	  catch (std::exception& e) {
+	    Rcout << "Segfault" << e.what() << std::endl;
+	    stop("Segfault in C++");
+	  }
+
+	  response_payload_slice = grpc_byte_buffer_reader_readall(&bbr_1);
+	  response_payload_raw = sliceToRaw2(response_payload_slice);
+
+	  RGRPC_LOG("response_payload_raw = " << response_payload_raw);
   }
-
-  catch (std::exception& e) {
-    Rcout << "Segfault" << e.what() << std::endl;
-    stop("Segfault in C++");
-  }
-
-  response_payload_slice = grpc_byte_buffer_reader_readall(&bbr_1);
-  response_payload_raw = sliceToRaw2(response_payload_slice);
-
-  RGRPC_LOG("response_payload_raw = " << response_payload_raw);
-
+  */
   //Streaming Ends Here
 
   RGRPC_LOG("Cleanup");
@@ -335,7 +384,7 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
 
   grpc_byte_buffer_destroy(request_payload);
   grpc_byte_buffer_destroy(response_payload_recv);
- 
+
   return response_payload_raw;
   //return 0;
 }
