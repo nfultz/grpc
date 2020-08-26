@@ -301,9 +301,11 @@ List run(List target, CharacterVector hoststring, List hooks, bool useTLS, Chara
 
       status_code = GRPC_STATUS_OK;
 
+      RGRPC_LOG("Oauth2_Authentication");
       if(!validateOauth2(request_meta, checkAuthCallback)) {
         status_code = GRPC_STATUS_UNAUTHENTICATED;
       }
+      runFunctionIfProvided(hooks, "oauth_check", params);
 
       // Fire callback
       if (target.containsElementNamed(method[0])) {
