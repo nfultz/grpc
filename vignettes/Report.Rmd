@@ -1,0 +1,217 @@
+---
+title: "gRPC GSoC 2020"
+author: "Shehab Hosny"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Report}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Overview
+
+In this post I will try to wrap up my working progress throught GSoC 2020. I've been working since May trying to add new functionalities to the gRPC R package originally implemneted by Neal Faultz in 2017. There were a total of three tasks to implement, TLS Encryption, Oauth2 Authentication and finally Streaming.<br/><br/>
+So, lets now strat discussing how I actually implemented TLS Encrytion to messages sent by both the client and the server. 
+
+## TLS Encryption
+### client.cpp file updates:
+The **createChannel()** function is used to create either a secure or insecure channel based on the boolean variable **useTLS** set by the user.
+```cpp
+grpc_channel* channel = 
+  createChannel(useTLS, server[0], certPath[0], tokenValue[0], isMetadataAttached);
+```
+Here is a detailed implementation for the **createChannel()** function.
+```cpp
+grpc_channel* createChannel(bool useTLS, const char* server ,const char* path, 
+                            const char* tokenValue, bool isMetadataAttached) {
+  
+  grpc_channel* channel;
+
+  if(useTLS) {
+    grpc_channel_credentials* client_creds = 
+      getClientCredentials(path, tokenValue, isMetadataAttached);
+    channel = 
+      grpc_secure_channel_create(client_creds, server, NULL, nullptr);
+  }
+  
+  else {
+    channel = 
+      grpc_insecure_channel_create(server, NULL, nullptr);
+  }
+
+  return channel;
+}
+```
+The **getClientCredentials()** function is used to generate the client credentials based on the TLS certificates provided by the user.
+```cpp
+grpc_channel_credentials* getClientCredentials(const char* path, const char* tokenValue, 
+                                               bool isMetadataAttached){
+
+  files PEMfiles;
+
+  PEMfiles.CAcert = 
+    get_file_contents(((std::string)path + "ca-cert.pem").c_str());
+  PEMfiles.clientKey = 
+    get_file_contents(((std::string)path + "client-key.pem").c_str());
+  PEMfiles.clientCert = 
+    get_file_contents(((std::string)path + "client-cert.pem").c_str());
+  
+  grpc_ssl_pem_key_cert_pair signed_client_key_cert_pair =
+    {(PEMfiles.clientKey).c_str(), (PEMfiles.clientCert).c_str()};
+
+  grpc_channel_credentials* creds = grpc_ssl_credentials_create(
+    (PEMfiles.CAcert).c_str(), &signed_client_key_cert_pair, nullptr, nullptr);
+
+  if(isMetadataAttached)
+    return creds;
+
+  grpc_call_credentials* oauth2Creds = 
+    grpc_access_token_credentials_create(getOauth2AccessToken(tokenValue), nullptr);
+  
+  grpc_channel_credentials* credsTLSOauth =
+    grpc_composite_channel_credentials_create(creds, oauth2Creds, nullptr);
+    
+  return credsTLSOauth;
+}
+```
+
+The **get_file_contents()** function is used to read the TLS certificates files.
+```cpp
+static std::string get_file_contents(const char *fpath) {
+  std::ifstream finstream(fpath);
+
+  std::string contents(
+	  (std::istreambuf_iterator<char>(finstream)),
+	  std::istreambuf_iterator<char>()
+	  );
+
+  return contents;
+}
+```
+
+### server.cpp file updates:
+The **createPort()** function is used to create either a secure or insecure port based on the boolean variable **useTLS** set by the user.
+```cpp
+RGRPC_LOG("Bind");
+int port = 
+  createPort(useTLS, server, hoststring[0], CertPath[0]);
+params["port"] = port;
+runFunctionIfProvided(hooks, "bind", params);
+```
+Here is a detailed implementation for the **createPort()** function.
+```cpp
+int createPort(bool useTLS, grpc_server* server, const char* hoststring, const char* CertPath) {
+
+  int port;
+
+  if(useTLS) {
+    grpc_server_credentials* credentials = Get_TLS_Credentials(CertPath);
+    port = grpc_server_add_secure_http2_port(server, hoststring, credentials);
+    grpc_server_credentials_release(credentials);
+  }
+  
+  else {
+    port = grpc_server_add_insecure_http2_port(server, hoststring);
+  }
+
+  return port;
+}
+```
+The **Get_TLS_Credentials()** function is used to generate the server credentials based on the TLS certificates provided by the user.
+```cpp
+grpc_server_credentials* Get_TLS_Credentials(const char* path) {
+
+  std::string ca_cert_pem = 
+    get_file_contents(((std::string)path + "ca-cert.pem").c_str());
+  std::string server_key_pem = 
+    get_file_contents(((std::string)path + "server-key.pem").c_str());
+  std::string server_cert_pem = 
+    get_file_contents(((std::string)path + "server-cert.pem").c_str());
+
+  grpc_ssl_pem_key_cert_pair pem_cert_key_pair =
+    {server_key_pem.c_str(), server_cert_pem.c_str()};
+
+  grpc_server_credentials* Creds =
+    grpc_ssl_server_credentials_create_ex(
+      ca_cert_pem.c_str(),
+      &pem_cert_key_pair,
+      1,
+      GRPC_SSL_REQUEST_CLIENT_CERTIFICATE_AND_VERIFY,
+      nullptr);
+
+  return Creds;
+}
+```
+### Script to generate TLS certificates:
+```sh
+rm *.pem
+
+# 1. Generate CA's private key and self-signed certificate
+openssl req -x509 -newkey rsa:4096 -days 365 -nodes -keyout ca-key.pem -out ca-cert.pem -subj
+"/C=EG/ST=CairoEG/L=Cairo/O=GSoC/OU=CerAuth/CN=Cert/emailAddress=ca@gmail.com"
+
+# 2. Generate web server's private key and certificate signing request (CSR)
+openssl req -newkey rsa:4096 -nodes -keyout server-key.pem -out server-req.pem -subj
+"/C=EG/ST=AlexEG/L=Alex/O=GSoC/OU=Server/CN=Server/emailAddress=server@gmail.com"
+
+# 3. Use CA's private key to sign web server's CSR and get back the signed certificate
+openssl x509 -req -in server-req.pem -days 60 -CA ca-cert.pem -CAkey ca-key.pem 
+-CAcreateserial -out server-cert.pem -extfile server-ext.cnf
+
+# 4. Generate client's private key and certificate signing request (CSR)
+openssl req -newkey rsa:4096 -nodes -keyout client-key.pem -out client-req.pem -subj
+"/C=FR/ST=Alsace/L=Strasbourg/O=PC Client/OU=Computer/CN=Client/emailAddress=pcclient@gmail.com"
+
+# 5. Use CA's private key to sign client's CSR and get back the signed certificate
+openssl x509 -req -in client-req.pem -days 60 -CA ca-cert.pem -CAkey ca-key.pem 
+-CAcreateserial -out client-cert.pem
+```
+
+## Oauth2 Authentication
+### client.cpp file updates:
+The **getOauth2AccessToken()** function is used to return the access token set by the user.
+```cpp
+const char* getOauth2AccessToken(const char* tokenValue) {
+
+  if(tokenValue == nullptr)
+    stop("Access token value is not defined");
+
+  const char* accessToken(tokenValue + sizeof("Bearer ") - 1);
+  
+  return accessToken;
+}
+```
+
+### server.cpp file updates:
+The **validateOauth2()** function is used to check the validate the Oauth2 token.
+```cpp
+bool validateOauth2(grpc_metadata_array metadataArray, Function checkAuthCallback) {
+
+  Authentication_Token Oauth2;
+
+  int Index = metadataArray.count - 2;
+
+  if (metadataArray.count > 1) {
+
+    Oauth2.Value = 
+      (std::string)grpc_slice_to_c_string(metadataArray.metadata[Index].value);
+
+    Oauth2.Key = 
+      (std::string)grpc_slice_to_c_string(metadataArray.metadata[Index].key);
+
+    bool Check = Rcpp::as<bool>(checkAuthCallback(Oauth2.Value));
+
+    if(!Check)
+      return false;
+  }
+
+  return true;
+}
+```
