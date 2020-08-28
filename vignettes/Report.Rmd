@@ -17,10 +17,12 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-In this post I will try to wrap up my working progress throught GSoC 2020. I've been working since May trying to add new functionalities to the gRPC R package originally implemneted by Neal Faultz in 2017. There were a total of three tasks to implement, TLS Encryption, Oauth2 Authentication and finally Streaming.<br/><br/>
-So, lets now strat discussing how I actually implemented TLS Encrytion to messages sent by both the client and the server. 
+In this post I will try to wrap up my working progress throught GSoC 2020. I've been working since May trying to add new functionalities to the gRPC R package originally implemneted by Neal Faultz in 2017. There were a total of three tasks to implement, TLS Encryption, Oauth2 Authentication and finally Streaming. Here is the [link](https://github.com/Shehab7osny/grpc) for my forked repository.<br/><br/>
+So, lets now strat discussing how I actually implemented TLS Encrytion to messages sent by both the client and the server.
+![Image1](Image1.png)
 
 ## TLS Encryption
+
 ### client.cpp file updates:
 The **createChannel()** function is used to create either a secure or insecure channel based on the boolean variable **useTLS** set by the user.
 ```cpp
@@ -173,6 +175,9 @@ openssl req -newkey rsa:4096 -nodes -keyout client-key.pem -out client-req.pem -
 openssl x509 -req -in client-req.pem -days 60 -CA ca-cert.pem -CAkey ca-key.pem 
 -CAcreateserial -out client-cert.pem
 ```
+
+Here is a simple diagram to illustrate the TLS handshake process:
+![Image2](Image2.png)
 
 ## Oauth2 Authentication
 ### client.cpp file updates:
