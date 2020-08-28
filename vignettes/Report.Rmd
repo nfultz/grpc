@@ -273,7 +273,7 @@ List streamMessage(RawVector response) {
   grpc_op ops[6];
   grpc_op *op;
   int was_cancelled = 2;
-  
+    
   if(messageCount > 1) {
       //Client Mutex starts here
       do {
@@ -362,4 +362,186 @@ List streamMessage(RawVector response) {
 
   return List::create();
 }
+```
+
+## Example #1 (Unary Streaming invloving TLS and Oauth2)
+
+### Server-side:
+```R
+#' Example gRPC service
+#'
+#' Reads a message with a name and returns a message greeting the name.
+#' @references \url{https://github.com/grpc/grpc/tree/master/examples/cpp/helloworld}
+
+library(grpc)
+
+## reading the service definitions
+spec <- system.file('examples/helloworld.proto', package = 'grpc')
+
+impl <- read_services(spec)
+
+options(UseTLS = TRUE)
+options(CertPath = "/home/shehab/Dropbox/gRPC/Certificates/")
+options(AccessToken = "Bearer Token Shehab and Neal")
+
+impl$SayHello$f <- function(request){
+  newResponse(message = paste('Hello,', request$name))
+}
+
+impl$SayThanks$f <- function(request){
+  newResponse(message = paste('Thanks,', request$name))
+}
+
+impl$SayBye$f <- function(request){
+  newResponse(message = paste('Bye,', request$name))
+}
+
+## actually running the service handlers
+start_server(impl, "0.0.0.0:50051")
+
+```
+### Client-side:
+```R
+#' Example gRPC client
+#'
+#' Sends a message with a name and returns a message greeting the name.
+#' @references \url{https://github.com/grpc/grpc/tree/master/examples/cpp/helloworld}
+
+library(grpc)
+
+
+spec <- system.file('examples/helloworld.proto', package = 'grpc')  
+impl <- read_services(spec)
+
+options(UseTLS = TRUE)
+options(CertPath = "/home/shehab/Dropbox/gRPC/Certificates/")
+options(AccessToken = "Bearer Token Shehab and Neal")
+options(ClientDeadline = 10)
+
+client <- grpc_client(impl, "localhost:50051")
+
+for(who in c("Neal")){
+
+    hello <- client$SayHello$build(name=who)
+    message <- client$SayHello$call(hello)
+    
+    print(as.list(message))
+
+    thanks <- client$SayThanks$build(name=who)
+    message <- client$SayThanks$call(thanks, c("authorization", "Bearer Token Shehab and Neal"))
+    
+    print(as.list(message))
+
+    bye <- client$SayBye$build(name=who)
+    message <- client$SayBye$call(bye)
+    
+    print(as.list(message))
+}
+```
+### Output (Valid Encryption and Authentication):
+```R
+$message
+[1] "Hello, Neal"
+
+$message
+[1] "Thanks, Neal"
+
+$message
+[1] "Bye, Neal"
+```
+### Output (Invalid Encryption):
+```R
+Invalid private key.
+Handshaker factory creation failed with TSI_INVALID_ARGUMENT.
+Failed to create secure subchannel for secure name 'localhost:50051'
+Failed to create channel args during subchannel creation.
+Error in fetch(channel, fn$name, serialize(x, NULL), metadata, UseTLS,  : 
+  No response from the gRPC server
+Calls: demo ... eval -> eval -> <Anonymous> -> read -> fetch -> .Call
+Execution halted
+```
+### Output (Invalid Authentication):
+```R
+Error in fetch(channel, fn$name, serialize(x, NULL), metadata, UseTLS,  : 
+  The request does not have valid authentication credentials
+Calls: demo ... eval -> eval -> <Anonymous> -> read -> fetch -> .Call
+Execution halted
+```
+## Example #2 (Streaming invloving TLS and Oauth2)
+### Server-side:
+```R
+#' Example gRPC service
+#'
+#' Reads a message with a name and returns a stream of messages involving the name.
+#' @references \url{https://github.com/grpc/grpc/tree/master/examples/cpp/helloworld}
+
+library(grpc)
+
+## reading the service definitions
+spec <- system.file('examples/helloworld.proto', package = 'grpc')
+
+impl <- read_services(spec)
+
+options(UseTLS = TRUE)
+options(CertPath = "/home/shehab/Dropbox/gRPC/Certificates/")
+options(AccessToken = "Bearer Token Shehab and Neal")
+
+impl$SayEverything$f <- function(request){
+  newResponse(message = paste('Your name is ', request$name))
+  newResponse(message = paste('Hello,', request$name))
+  newResponse(message = paste('I hope you are enjoying your day,', request$name))
+  newResponse(message = paste('Thanks,', request$name))
+  newResponse(message = paste('Have a great day,', request$name))
+  newResponse(message = paste('Bye,', request$name))
+}
+
+## actually running the service handlers
+start_server(impl, "0.0.0.0:50051")
+```
+### Client-side:
+```R
+#' Example gRPC client
+#'
+#' Sends a message with a name and returns a stream of messages involving the name.
+#' @references \url{https://github.com/grpc/grpc/tree/master/examples/cpp/helloworld}
+
+library(grpc)
+
+spec <- system.file('examples/helloworld.proto', package = 'grpc')  
+impl <- read_services(spec)
+
+options(UseTLS = TRUE)
+options(CertPath = "/home/shehab/Dropbox/gRPC/Certificates/")
+options(AccessToken = "Bearer Token Shehab and Neal")
+options(ClientDeadline = 10)
+
+client <- grpc_client(impl, "localhost:50051")
+
+everything <- client$SayEverything$build(name='Shehab')
+queue <- client$SayEverything$call(everything, 
+         c("authorization", "Bearer Token Shehab and Neal"))
+
+for (message in queue) {
+	print(as.list(message))
+}
+```
+### Output (Valid Encryption and Authentication):
+```R
+$message
+[1] "Your name is  Shehab"
+
+$message
+[1] "Hello, Shehab"
+
+$message
+[1] "I hope you are enjoying your day, Shehab"
+
+$message
+[1] "Thanks, Shehab"
+
+$message
+[1] "Have a great day, Shehab"
+
+$message
+[1] "Bye, Shehab"
 ```
