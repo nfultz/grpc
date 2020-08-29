@@ -17,18 +17,72 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-In this post I will try to wrap up my working progress throught GSoC 2020. I've been working since May trying to add new functionalities to the gRPC R package originally implemneted by Neal Faultz in 2017. There were a total of three tasks to implement, TLS Encryption, Oauth2 Authentication and finally Streaming. Here is the [link](https://github.com/Shehab7osny/grpc) for my forked repository.<br/><br/>
+In this post I will try to wrap up my working progress throught GSoC 2020. I've been working since May trying to add new functionalities to the gRPC R package originally implemneted by Neal Fultz in 2017. There were a total of three tasks to implement, TLS Encryption, Oauth2 Authentication and finally Streaming. Here is the [link](https://github.com/Shehab7osny/grpc) for my forked repository.<br/><br/>
 So, lets now strat discussing how I actually implemented TLS Encrytion to messages sent by both the client and the server.
 ![Image1](Image1.png)
 
-## TLS Encryption
+## 1. TLS Encryption
 
+1. Overview:<br/>
+TLS is a security protocol used to provide end-to-end security of data sent between clients and servers. This is vital to ensure that eavesdroppers and hackers are unable to grab sensitive information such as passwords, credit card numbers, and personal correspondence sent over the gRPC connection.<br/><br/>
+The following diagram illustrates the TLS handshake process:
+![Image2](https://user-images.githubusercontent.com/36346614/91601788-8b3c2000-e96a-11ea-8696-1600a72117a9.png)
+
+2. Steps to secure the gRPC connection with TLS encryption:
+    1. Generate the TLS certificates using the following script:
+        ```sh
+        rm *.pem
+    
+        # 1. Generate CA's private key and self-signed certificate
+        openssl req -x509 -newkey rsa:4096 -days 365 -nodes -keyout ca-key.pem -out ca-cert.pem -subj
+        "/C=EG/ST=CairoEG/L=Cairo/O=GSoC/OU=CerAuth/CN=Cert/emailAddress=ca@gmail.com"
+    
+        # 2. Generate web server's private key and certificate signing request (CSR)
+        openssl req -newkey rsa:4096 -nodes -keyout server-key.pem -out server-req.pem -subj
+        "/C=EG/ST=AlexEG/L=Alex/O=GSoC/OU=Server/CN=Server/emailAddress=server@gmail.com"
+    
+        # 3. Use CA's private key to sign web server's CSR and get back the signed certificate
+        openssl x509 -req -in server-req.pem -days 60 -CA ca-cert.pem -CAkey ca-key.pem 
+        -CAcreateserial -out server-cert.pem -extfile server-ext.cnf
+    
+        # 4. Generate client's private key and certificate signing request (CSR)
+        openssl req -newkey rsa:4096 -nodes -keyout client-key.pem -out client-req.pem -subj
+        "/C=FR/ST=Alsace/L=Strasbourg/O=PC Client/OU=Computer/CN=Client/emailAddress=pcclient@gmail.com"
+    
+        # 5. Use CA's private key to sign client's CSR and get back the signed certificate
+        openssl x509 -req -in client-req.pem -days 60 -CA ca-cert.pem -CAkey ca-key.pem 
+        -CAcreateserial -out client-cert.pem
+        ```
+    2. For the client-side and server-side, set the following options to an already impelemented server and client:
+        ```R
+        # Enable the TLS encryption
+        options(UseTLS = TRUE)
+        # Provide the folder containing the TLS certificates
+        options(CertPath = "/home/gRPC/Certificates/")
+        ```
+     3. In case of invalid certificates or private key, the following message will pop up:
+        ```R
+        Invalid private key.
+        Handshaker factory creation failed with TSI_INVALID_ARGUMENT.
+        Failed to create secure subchannel for secure name 'localhost:50051'
+        Failed to create channel args during subchannel creation.
+        Error in fetch(channel, fn$name, serialize(x, NULL), metadata, UseTLS,  : 
+          No response from the gRPC server
+        Calls: demo ... eval -> eval -> <Anonymous> -> read -> fetch -> .Call
+        Execution halted
+        ```
+
+<details>
+  <summary>Implementation Technical Details</summary>
+  <p>
+	  	  
 ### client.cpp file updates:
-The **createChannel()** function is used to create either a secure or insecure channel based on the boolean variable **useTLS** set by the user.
+The **createChannel()** function is used to create either a secure or insecure channel based on the boolean
+variable **useTLS** set by the user.
 ```cpp
 grpc_channel* channel = 
-  createChannel(useTLS, server[0], certPath[0], tokenValue[0], isMetadataAttached);
-```
+createChannel(useTLS, server[0], certPath[0], tokenValue[0], isMetadataAttached);
+	  ```
 Here is a detailed implementation for the **createChannel()** function.
 ```cpp
 grpc_channel* createChannel(bool useTLS, const char* server ,const char* path, 
@@ -151,402 +205,6 @@ grpc_server_credentials* Get_TLS_Credentials(const char* path) {
   return Creds;
 }
 ```
-### Script to generate TLS certificates:
-```sh
-rm *.pem
 
-# 1. Generate CA's private key and self-signed certificate
-openssl req -x509 -newkey rsa:4096 -days 365 -nodes -keyout ca-key.pem -out ca-cert.pem -subj
-"/C=EG/ST=CairoEG/L=Cairo/O=GSoC/OU=CerAuth/CN=Cert/emailAddress=ca@gmail.com"
-
-# 2. Generate web server's private key and certificate signing request (CSR)
-openssl req -newkey rsa:4096 -nodes -keyout server-key.pem -out server-req.pem -subj
-"/C=EG/ST=AlexEG/L=Alex/O=GSoC/OU=Server/CN=Server/emailAddress=server@gmail.com"
-
-# 3. Use CA's private key to sign web server's CSR and get back the signed certificate
-openssl x509 -req -in server-req.pem -days 60 -CA ca-cert.pem -CAkey ca-key.pem 
--CAcreateserial -out server-cert.pem -extfile server-ext.cnf
-
-# 4. Generate client's private key and certificate signing request (CSR)
-openssl req -newkey rsa:4096 -nodes -keyout client-key.pem -out client-req.pem -subj
-"/C=FR/ST=Alsace/L=Strasbourg/O=PC Client/OU=Computer/CN=Client/emailAddress=pcclient@gmail.com"
-
-# 5. Use CA's private key to sign client's CSR and get back the signed certificate
-openssl x509 -req -in client-req.pem -days 60 -CA ca-cert.pem -CAkey ca-key.pem 
--CAcreateserial -out client-cert.pem
-```
-
-Here is a simple diagram to illustrate the TLS handshake process:
-![Image2](Image2.png)
-
-## Oauth2 Authentication
-### client.cpp file updates:
-The **getOauth2AccessToken()** function is used to return the access token set by the user.
-```cpp
-const char* getOauth2AccessToken(const char* tokenValue) {
-
-  if(tokenValue == nullptr)
-    stop("Access token value is not defined");
-
-  const char* accessToken(tokenValue + sizeof("Bearer ") - 1);
-  
-  return accessToken;
-}
-```
-
-### server.cpp file updates:
-The **validateOauth2()** function is used to check the validate the Oauth2 token.
-```cpp
-bool validateOauth2(grpc_metadata_array metadataArray, Function checkAuthCallback) {
-
-  Authentication_Token Oauth2;
-
-  int Index = metadataArray.count - 2;
-
-  if (metadataArray.count > 1) {
-
-    Oauth2.Value = 
-      (std::string)grpc_slice_to_c_string(metadataArray.metadata[Index].value);
-
-    Oauth2.Key = 
-      (std::string)grpc_slice_to_c_string(metadataArray.metadata[Index].key);
-
-    bool Check = Rcpp::as<bool>(checkAuthCallback(Oauth2.Value));
-
-    if(!Check)
-      return false;
-  }
-
-  return true;
-}
-```
-## Streaming
-
-### client.R file updates:
-```R
-client_functions <- lapply(impl, 
-function(fn) {
-  RequestDescriptor   <- P(fn[["RequestType"]]$proto)
-  ResponseDescriptor  <- P(fn[["ResponseType"]]$proto)
-	stream_bool <- fn[["ResponseType"]]$stream
-	message <- list(
-	call = function(x, metadata=character(0)) 
-	{
-	  if(stream_bool) {
-		i <- 1
-		List_messages <- list()
-		while(1) {
-		  message <- read(
-			ResponseDescriptor, 
-			fetch(channel, fn$name, serialize(x, NULL), metadata, UseTLS, CertPath, AccessToken,
-			ClientDeadline)
-			)
-						  
-		  if(as.list(message) == '')
-		    break;
-						
-			List_messages[[i]] <- message
-			  i <- i + 1
-			}
-		}
-
-	  else {
-	    List_messages <- read(
-	    ResponseDescriptor, 
-	    fetch(channel, fn$name, serialize(x, NULL), metadata, UseTLS, CertPath, AccessToken,
-			ClientDeadline)
-			)
-		}
-				
-		List_messages
-  },
-            
-  build = function(...) {
-    new(RequestDescriptor, ...)
-  }
-  )
-  message
-}
-)
-```
-### server.cpp file updates:
-
-```cpp
-// [[Rcpp::export]]
-List streamMessage(RawVector response) {
-
-  grpc_op ops[6];
-  grpc_op *op;
-  int was_cancelled = 2;
-    
-  if(messageCount > 1) {
-      //Client Mutex starts here
-      do {
-          memset(ops, 0, sizeof(ops));
-
-          grpc_server_request_call(*Server_Global, Call_Global,
-                           Details_Global, Metadata_Global, *Queue_Global, *Queue_Global, NULL);
-
-          gpr_timespec c_increment = 
-              gpr_time_from_millis(_INTERRUPT_CHECK_PERIOD_MS, GPR_TIMESPAN);
-
-          gpr_timespec c_timeout = 
-              gpr_time_add(gpr_now(GPR_CLOCK_REALTIME), c_increment);
-
-          *Event_Global = grpc_completion_queue_next(*Queue_Global, c_timeout, RESERVED);
-
-      } while((*Event_Global).type != GRPC_OP_COMPLETE);
-      //Client Mutex ends here
-
-      memset(ops, 0, sizeof(ops));
-      op = ops;
-
-      RGRPC_LOG("GRPC_OP_SEND_INITIAL_METADATA");
-      op -> op = GRPC_OP_SEND_INITIAL_METADATA;
-      op -> data.send_initial_metadata.count = 0;
-      op -> data.send_initial_metadata.maybe_compression_level.is_set = false;
-      op -> flags = 0;
-      op -> reserved = NULL;
-      op++;
-
-      RGRPC_LOG("GRPC_OP_RECV_MESSAGE");
-      op -> op = GRPC_OP_RECV_MESSAGE;
-      op -> data.recv_message.recv_message = Request_Global;
-      op -> flags = 0;
-      op -> reserved = NULL;
-      op++;
-
-      grpc_call_start_batch(*Call_Global, ops, (size_t)(op - ops), NULL, NULL);
-      grpc_completion_queue_next(*Queue_Global, *Timespec_Global, RESERVED);
-  }
-
-  messageCount = messageCount + 1;
-
-  char const * status_details_string = "OK";
-
-  int len = response.length();
-  SEXP raw_ = response;
-  grpc_slice response_payload_slice = grpc_slice_from_copied_buffer((char*) RAW(raw_), len);
-  grpc_byte_buffer* response_payload = grpc_raw_byte_buffer_create(&response_payload_slice, 1);
-  grpc_slice_unref(response_payload_slice);
-
-  memset(ops, 0, sizeof(ops));
-  op = ops;
-  
-  RGRPC_LOG("GRPC_OP_RECV_CLOSE_ON_SERVER");
-  op -> op = GRPC_OP_RECV_CLOSE_ON_SERVER;
-  op -> data.recv_close_on_server.cancelled = &was_cancelled;
-  op -> flags = 0;
-  op -> reserved = NULL;
-  op++;
-  
-  RGRPC_LOG("GRPC_OP_SEND_MESSAGE");
-  op -> op = GRPC_OP_SEND_MESSAGE;
-  op -> data.send_message.send_message = response_payload;
-  op -> flags = 0;
-  op -> reserved = NULL;
-  op++;
-  
-  RGRPC_LOG("GRPC_OP_SEND_STATUS_FROM_SERVER 1");
-  op -> op = GRPC_OP_SEND_STATUS_FROM_SERVER;
-  op -> data.send_status_from_server.trailing_metadata_count = 0;
-  
-  op -> data.send_status_from_server.status = *Status_Code_Global;
-  grpc_slice status_details = grpc_slice_from_static_string(status_details_string);
-
-  op -> data.send_status_from_server.status_details = &status_details;
-  op -> flags = 0;
-  op -> reserved = NULL;
-  op++;
-  
-  RGRPC_LOG("Starts the process of Streaming!");
-  grpc_call_start_batch(*Call_Global, ops, (size_t)(op - ops), NULL, NULL);
-  *Event_Global = grpc_completion_queue_next(*Queue_Global, *Timespec_Global, RESERVED);
-  
-  grpc_byte_buffer_destroy(response_payload);
-
-  return List::create();
-}
-```
-
-## Example #1 (Unary Streaming invloving TLS and Oauth2)
-
-### Server-side:
-```R
-#' Example gRPC service
-#'
-#' Reads a message with a name and returns a message greeting the name.
-#' @references \url{https://github.com/grpc/grpc/tree/master/examples/cpp/helloworld}
-
-library(grpc)
-
-## reading the service definitions
-spec <- system.file('examples/helloworld.proto', package = 'grpc')
-
-impl <- read_services(spec)
-
-options(UseTLS = TRUE)
-options(CertPath = "/home/shehab/Dropbox/gRPC/Certificates/")
-options(AccessToken = "Bearer Token Shehab and Neal")
-
-impl$SayHello$f <- function(request){
-  newResponse(message = paste('Hello,', request$name))
-}
-
-impl$SayThanks$f <- function(request){
-  newResponse(message = paste('Thanks,', request$name))
-}
-
-impl$SayBye$f <- function(request){
-  newResponse(message = paste('Bye,', request$name))
-}
-
-## actually running the service handlers
-start_server(impl, "0.0.0.0:50051")
-
-```
-### Client-side:
-```R
-#' Example gRPC client
-#'
-#' Sends a message with a name and returns a message greeting the name.
-#' @references \url{https://github.com/grpc/grpc/tree/master/examples/cpp/helloworld}
-
-library(grpc)
-
-
-spec <- system.file('examples/helloworld.proto', package = 'grpc')  
-impl <- read_services(spec)
-
-options(UseTLS = TRUE)
-options(CertPath = "/home/shehab/Dropbox/gRPC/Certificates/")
-options(AccessToken = "Bearer Token Shehab and Neal")
-options(ClientDeadline = 10)
-
-client <- grpc_client(impl, "localhost:50051")
-
-for(who in c("Neal")){
-
-    hello <- client$SayHello$build(name=who)
-    message <- client$SayHello$call(hello)
-    
-    print(as.list(message))
-
-    thanks <- client$SayThanks$build(name=who)
-    message <- client$SayThanks$call(thanks, c("authorization", "Bearer Token Shehab and Neal"))
-    
-    print(as.list(message))
-
-    bye <- client$SayBye$build(name=who)
-    message <- client$SayBye$call(bye)
-    
-    print(as.list(message))
-}
-```
-### Output (Valid Encryption and Authentication):
-```R
-$message
-[1] "Hello, Neal"
-
-$message
-[1] "Thanks, Neal"
-
-$message
-[1] "Bye, Neal"
-```
-### Output (Invalid Encryption):
-```R
-Invalid private key.
-Handshaker factory creation failed with TSI_INVALID_ARGUMENT.
-Failed to create secure subchannel for secure name 'localhost:50051'
-Failed to create channel args during subchannel creation.
-Error in fetch(channel, fn$name, serialize(x, NULL), metadata, UseTLS,  : 
-  No response from the gRPC server
-Calls: demo ... eval -> eval -> <Anonymous> -> read -> fetch -> .Call
-Execution halted
-```
-### Output (Invalid Authentication):
-```R
-Error in fetch(channel, fn$name, serialize(x, NULL), metadata, UseTLS,  : 
-  The request does not have valid authentication credentials
-Calls: demo ... eval -> eval -> <Anonymous> -> read -> fetch -> .Call
-Execution halted
-```
-## Example #2 (Streaming invloving TLS and Oauth2)
-### Server-side:
-```R
-#' Example gRPC service
-#'
-#' Reads a message with a name and returns a stream of messages involving the name.
-#' @references \url{https://github.com/grpc/grpc/tree/master/examples/cpp/helloworld}
-
-library(grpc)
-
-## reading the service definitions
-spec <- system.file('examples/helloworld.proto', package = 'grpc')
-
-impl <- read_services(spec)
-
-options(UseTLS = TRUE)
-options(CertPath = "/home/shehab/Dropbox/gRPC/Certificates/")
-options(AccessToken = "Bearer Token Shehab and Neal")
-
-impl$SayEverything$f <- function(request){
-  newResponse(message = paste('Your name is ', request$name))
-  newResponse(message = paste('Hello,', request$name))
-  newResponse(message = paste('I hope you are enjoying your day,', request$name))
-  newResponse(message = paste('Thanks,', request$name))
-  newResponse(message = paste('Have a great day,', request$name))
-  newResponse(message = paste('Bye,', request$name))
-}
-
-## actually running the service handlers
-start_server(impl, "0.0.0.0:50051")
-```
-### Client-side:
-```R
-#' Example gRPC client
-#'
-#' Sends a message with a name and returns a stream of messages involving the name.
-#' @references \url{https://github.com/grpc/grpc/tree/master/examples/cpp/helloworld}
-
-library(grpc)
-
-spec <- system.file('examples/helloworld.proto', package = 'grpc')  
-impl <- read_services(spec)
-
-options(UseTLS = TRUE)
-options(CertPath = "/home/shehab/Dropbox/gRPC/Certificates/")
-options(AccessToken = "Bearer Token Shehab and Neal")
-options(ClientDeadline = 10)
-
-client <- grpc_client(impl, "localhost:50051")
-
-everything <- client$SayEverything$build(name='Shehab')
-queue <- client$SayEverything$call(everything, 
-         c("authorization", "Bearer Token Shehab and Neal"))
-
-for (message in queue) {
-	print(as.list(message))
-}
-```
-### Output (Valid Encryption and Authentication):
-```R
-$message
-[1] "Your name is  Shehab"
-
-$message
-[1] "Hello, Shehab"
-
-$message
-[1] "I hope you are enjoying your day, Shehab"
-
-$message
-[1] "Thanks, Shehab"
-
-$message
-[1] "Have a great day, Shehab"
-
-$message
-[1] "Bye, Shehab"
-```
+  </p>
+</details>
