@@ -25,8 +25,10 @@ git submodule update --init
 #export CFLAGS='-g -O2 -w' 
 #export CXXFLAGS='-g -O2 -w'
 
+mkdir -p cmake/build
+cd cmake/build
+cmake ../..
 make
-sudo make install
 sudo ldconfig
 ```
 
