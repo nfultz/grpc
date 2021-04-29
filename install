@@ -2,6 +2,8 @@ git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc grp
 cd grpc_base
 git submodule update --init
 
+mkdir -p cmake/build
+cd cmake/build
+cmake ../..
 make
-sudo make install
 sudo ldconfig
