@@ -16,18 +16,34 @@ sudo apt-get install clang libc++-dev
 
 ### Download and Install grpc
 ```shell
-git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc grpc_base
+export GRPC_INSTALL_DIR=$HOME/.local
+mkdir -p $GRPC_INSTALL_DIR
+export PATH="$GRPC_INSTALL_DIR/bin:$PATH"
+
+sudo apt install -y cmake
+
+LATEST_VER=$(curl -L "https://api.github.com/repos/grpc/grpc/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")')
+git clone --recurse-submodules -b $LATEST_VER https://github.com/grpc/grpc grpc_base
+
 cd grpc_base
-git submodule update --init
-
-## In gcc 8.2 I got an error which I could fix with (see https://github.com/grpc/grpc/issues/17781)
-## with the following two export lines. (uncomment and run if you gat an error when calling make).
-#export CFLAGS='-g -O2 -w' 
-#export CXXFLAGS='-g -O2 -w'
-
-make
+mkdir -p cmake/build
+pushd cmake/build
+cmake -DgRPC_INSTALL=ON \
+      -DgRPC_BUILD_TESTS=OFF \
+      -DCMAKE_INSTALL_PREFIX=$GRPC_INSTALL_DIR \
+      ../..
+make -j4
 sudo make install
-sudo ldconfig
+popd
+
+mkdir -p third_party/abseil-cpp/cmake/build
+pushd third_party/abseil-cpp/cmake/build
+cmake -DCMAKE_INSTALL_PREFIX=$GRPC_INSTALL_DIR \
+      -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \
+      ../..
+make -j4
+sudo make install
+popd
 ```
 
 # Original 
