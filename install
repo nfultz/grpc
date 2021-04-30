@@ -5,7 +5,8 @@ export PATH="$GRPC_INSTALL_DIR/bin:$PATH"
 sudo apt install -y cmake
 sudo apt install -y build-essential autoconf libtool pkg-config
 
-git clone --recurse-submodules -b v1.35.0 https://github.com/grpc/grpc grpc_base
+LATEST_VER=$(curl -L "https://api.github.com/repos/grpc/grpc/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")')
+git clone --recurse-submodules -b $LATEST_VER https://github.com/grpc/grpc grpc_base
 
 cd grpc_base
 mkdir -p cmake/build
