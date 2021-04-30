@@ -1,9 +1,28 @@
-git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc grpc_base
-cd grpc_base
-git submodule update --init
+export GRPC_INSTALL_DIR=$HOME/.local
+mkdir -p $GRPC_INSTALL_DIR
+export PATH="$GRPC_INSTALL_DIR/bin:$PATH"
 
+sudo apt install -y cmake
+sudo apt install -y build-essential autoconf libtool pkg-config
+
+git clone --recurse-submodules -b v1.35.0 https://github.com/grpc/grpc grpc_base
+
+cd grpc_base
 mkdir -p cmake/build
-cd cmake/build
-cmake ../..
-make
-sudo ldconfig
+pushd cmake/build
+cmake -DgRPC_INSTALL=ON \
+      -DgRPC_BUILD_TESTS=OFF \
+      -DCMAKE_INSTALL_PREFIX=$GRPC_INSTALL_DIR \
+      ../..
+make -j4
+sudo make install
+popd
+
+mkdir -p third_party/abseil-cpp/cmake/build
+pushd third_party/abseil-cpp/cmake/build
+cmake -DCMAKE_INSTALL_PREFIX=$GRPC_INSTALL_DIR \
+      -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \
+      ../..
+make -j4
+sudo make install
+popd
