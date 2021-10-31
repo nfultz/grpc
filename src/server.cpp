@@ -1,4 +1,8 @@
 #include <Rcpp.h>
+// undef the Free macro defined by Rcpp as it is redfined by absl later.
+#ifdef Free
+#undef Free
+#endif
 #include <grpc/grpc.h>
 #include <grpc/impl/codegen/byte_buffer_reader.h>
 #include "common.h"
@@ -7,7 +11,7 @@
 
 using namespace Rcpp;
 
-#include <grpc++/grpc++.h>
+#include <grpcpp/grpcpp.h>
 using grpc::Status;
 using grpc::StatusCode;
 

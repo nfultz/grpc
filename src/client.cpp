@@ -70,10 +70,10 @@ RawVector fetch(CharacterVector server, CharacterVector method, RawVector reques
   grpc_metadata meta_c[metadata_length];
 
   for(int i = 0; i < metadata_length; i++) {
-    meta_c[i] = {grpc_slice_from_static_string(metadata[i * 2]),
-        grpc_slice_from_static_string(metadata[i * 2 + 1]),
-        0,
-        {{nullptr, nullptr, nullptr, nullptr}}};
+    meta_c[i] = grpc_metadata{
+      grpc_slice_from_static_string(metadata[i * 2]),
+      grpc_slice_from_static_string(metadata[i * 2 + 1]),
+      0, {}};
   }
 
   grpc_metadata_array initial_metadata_recv;
