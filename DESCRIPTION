@@ -17,6 +17,5 @@ Suggests:
     processx
 LinkingTo: Rcpp
 SystemRequirements: 
-    grpc (>= 4.0.0)
     protobuf
 RoxygenNote: 6.0.1
