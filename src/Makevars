@@ -1,4 +1,5 @@
 CXX_STD = CXX11
 PKG_LIBS = `pkg-config --libs grpc`
 PKG_CXXFLAGS = `pkg-config --cflags grpc`
-
+PKG_CFLAGS = `pkg-config --cflags grpc`
+PKG_CPPFLAGS = -I/usr/share/R/Rcpp/include
